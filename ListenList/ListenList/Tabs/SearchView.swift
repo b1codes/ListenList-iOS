@@ -9,6 +9,8 @@ struct SearchView: View {
     @State private var searchText: String = ""
     @State private var isLoading = false
     @FocusState private var isTextFieldFocused: Bool // Focus management for TextField
+    @State private var currentSearchTask: Task<Void, Never>? = nil
+
     
     init(access: String, type: String) {
         self.accessToken = access
@@ -81,18 +83,26 @@ struct SearchView: View {
     @MainActor
     func startSearch() async {
         guard !self.searchText.isEmpty else { return }
-
-        self.isLoading = true
-        self.cards = [] // Clear previous results
-        self.isTextFieldFocused = false // Dismiss keyboard
-
-        // Perform search and handle results
-        let results: [Card] = await performSearch()
         
-        self.cards = results // Update results
-
-        self.isLoading = false // Stop loading
-        print("done searching!")
+        // Cancel any ongoing search
+        currentSearchTask?.cancel()
+        
+        let thisQuery = self.searchText
+        self.isLoading = true
+        self.cards = []
+        self.isTextFieldFocused = false
+        
+        // Create a new task for the search
+        currentSearchTask = Task {
+            let results: [Card] = await performSearch()
+            
+            // Check if the search text hasn’t changed in the meantime
+            if self.searchText == thisQuery {
+                self.cards = results
+            }
+            self.isLoading = false
+            print("done searching!")
+        }
     }
 
 
@@ -117,6 +127,7 @@ struct SearchView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding()
+
                     
                     HStack {
                         TextField("Search...", text: $searchText)
