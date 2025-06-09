@@ -10,17 +10,25 @@ import SwiftUI
 struct CardList: View {
     var results: [Card]
     private let columns = [GridItem(.flexible())]
+    var onAdd: ((Card) -> Void)?
+
 
     var body: some View {
         LazyVGrid(columns: columns, alignment: .center, spacing: 10) {
             ForEach(results, id: \.id) { item in
                 switch item.type {
                     case .song:
-                        SongCard(input: item.input)
+                        SongCard(input: item.input) {
+                            onAdd?(item)
+                        }
                     case .album:
-                        AlbumCard(input: item.input)
+                        AlbumCard(input: item.input) {
+                            onAdd?(item)
+                        }
                     case .artist:
-                        ArtistCard(input: item.input)
+                        ArtistCard(input: item.input) {
+                            onAdd?(item)
+                        }
                 }
             }
         }

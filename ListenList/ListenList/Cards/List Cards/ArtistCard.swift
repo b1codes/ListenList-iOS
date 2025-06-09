@@ -10,14 +10,18 @@ import SwiftUI
 struct ArtistCard: View {
     var input: Media
     var artist: Artist?
+    var onAdd: (() -> Void)? // Action to perform when add is tapped
+
     
     let maxHeight: CGFloat = 120
     
-    init(input: Media) {
+    init(input: Media, onAdd: (() -> Void)? = nil) {
         self.input = input
         if case let .artist(artist) = input.input {
             self.artist = artist
         }
+        self.onAdd = onAdd
+
     }
     
     private var placeholderImage: some View {
@@ -100,6 +104,15 @@ struct ArtistCard: View {
                     .padding(.trailing)
                     
                     Spacer()
+                    // Show the add button only if the onAdd action is provided
+                    if let onAdd = onAdd {
+                        Button(action: onAdd) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title)
+                                .foregroundColor(.green)
+                        }
+                        .padding(.trailing)
+                    }
                 }
             }
             .frame(maxWidth: 600, maxHeight: maxHeight)

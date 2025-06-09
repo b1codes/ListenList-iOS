@@ -10,14 +10,18 @@ import SwiftUI
 struct AlbumCard: View {
     var input: Media
     var album: Album?
+    var onAdd: (() -> Void)? // Action to perform when add is tapped
+
     
     let maxHeight: CGFloat = 120
     
-    init(input: Media) {
+    init(input: Media, onAdd: (() -> Void)? = nil) {
         self.input = input
         if case let .album(album) = input.input {
             self.album = album
         }
+        self.onAdd = onAdd
+
     }
     
     private func artistsToStr() -> String {
@@ -109,6 +113,15 @@ struct AlbumCard: View {
                     .padding(.trailing)
                     
                     Spacer()
+                    // Show the add button only if the onAdd action is provided
+                    if let onAdd = onAdd {
+                        Button(action: onAdd) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title)
+                                .foregroundColor(.green)
+                        }
+                        .padding(.trailing)
+                    }
                 }
             }
             .frame(maxWidth: 600, maxHeight: maxHeight)

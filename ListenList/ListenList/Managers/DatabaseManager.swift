@@ -170,4 +170,51 @@ class DatabaseManager {
             completion(images, nil)
         }
     }
+    
+    // MARK: - Add Functions
+
+    func addSong(song: Song, completion: @escaping (Error?) -> Void) {
+        let songData: [String: Any] = [
+            "name": song.name,
+            "popularity": song.popularity,
+            "durationMs": song.duration_ms,
+            "isExplicit": song.explicit,
+            "album": db.collection("albums").document(song.album.id),
+            "artists": song.artists.map { db.collection("artists").document($0.id) }
+        ]
+        db.collection("songs").document(song.id).setData(songData, completion: completion)
+    }
+
+    func addAlbum(album: Album, completion: @escaping (Error?) -> Void) {
+        let albumData: [String: Any] = [
+            "name": album.name,
+            "release_date": album.release_date,
+            "images": album.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
+            "artists": album.artists.map { db.collection("artists").document($0.id) }
+        ]
+        db.collection("albums").document(album.id).setData(albumData, completion: completion)
+    }
+
+    func addArtist(artist: Artist, completion: @escaping (Error?) -> Void) {
+        let artistData: [String: Any] = [
+            "name": artist.name,
+            "popularity": artist.popularity ?? 0,
+            "images": artist.images?.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] } ?? []
+        ]
+        db.collection("artists").document(artist.id).setData(artistData, completion: completion)
+    }
+
+    // MARK: - Delete Functions
+
+    func deleteSong(withId songId: String, completion: @escaping (Error?) -> Void) {
+        db.collection("songs").document(songId).delete(completion: completion)
+    }
+
+    func deleteAlbum(withId albumId: String, completion: @escaping (Error?) -> Void) {
+        db.collection("albums").document(albumId).delete(completion: completion)
+    }
+
+    func deleteArtist(withId artistId: String, completion: @escaping (Error?) -> Void) {
+        db.collection("artists").document(artistId).delete(completion: completion)
+    }
 }

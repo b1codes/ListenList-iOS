@@ -113,6 +113,7 @@ struct SearchView: View {
         isLoading = false
         isTextFieldFocused = false // Clear keyboard focus
     }
+    
 
 
 

@@ -10,12 +10,16 @@ import SwiftUI
 struct SongCard: View {
     var input: Media
     var song: Song?
+    var onAdd: (() -> Void)? // Action to perform when add is tapped
+
     
-    init(input: Media) {
+    init(input: Media, onAdd: (() -> Void)? = nil) {
         self.input = input
         if case let .song(song) = input.input {
             self.song = song
         }
+        self.onAdd = onAdd
+
     }
 
     let maxHeight: CGFloat = 120
@@ -129,6 +133,16 @@ struct SongCard: View {
                         .padding(.trailing)
                         
                         Spacer()
+                        
+                        // Show the add button only if the onAdd action is provided
+                        if let onAdd = onAdd {
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(.green)
+                            }
+                            .padding(.trailing)
+                        }
                     }
                 }
                 .frame(maxWidth: 600, maxHeight: maxHeight)
@@ -163,6 +177,15 @@ struct SongCard: View {
                         }
                         .padding(.trailing)
                         Spacer()
+                        // Show the add button only if the onAdd action is provided
+                        if let onAdd = onAdd {
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(.green)
+                            }
+                            .padding(.trailing)
+                        }
                     }
                 }
                 .frame(maxWidth: 600, maxHeight: maxHeight)
