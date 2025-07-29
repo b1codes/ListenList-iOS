@@ -108,8 +108,6 @@ struct ArtistCard: View {
                     if let onAdd = onAdd {
                         Button(action: onAdd) {
                             Image(systemName: "plus.circle.fill")
-                                .font(.title)
-                                .foregroundColor(.green)
                         }
                         .padding(.trailing)
                     }
