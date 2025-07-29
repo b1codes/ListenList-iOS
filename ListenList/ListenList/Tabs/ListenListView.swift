@@ -121,25 +121,25 @@ struct ListenListView: View {
                 completion([])
                 return
             }
-            
+
             guard let documents = snapshot?.documents else {
                 completion([])
                 return
             }
-            
+
             var fetchedAlbums: [Album] = []
             let group = DispatchGroup()
-            
+
             for document in documents {
                 group.enter()
-                AlbumDTO.toAlbum(from: document.reference) { albumDTO in
-                    if let albumDTO = albumDTO, let album = Album(from: albumDTO) {
+                DatabaseManager.shared.fetchAlbum(withId: document.documentID) { album in
+                    if let album = album {
                         fetchedAlbums.append(album)
                     }
                     group.leave()
                 }
             }
-            
+
             group.notify(queue: .main) {
                 completion(fetchedAlbums)
             }

@@ -123,6 +123,31 @@ class DatabaseManager {
         }
     }
     
+    func fetchAlbum(withId albumId: String, completion: @escaping (Album?) -> Void) {
+        let albumRef = db.collection("albums").document(albumId)
+
+        AlbumDTO.toAlbum(from: albumRef) { albumDTO in
+            guard let albumDTO = albumDTO else {
+                completion(nil)
+                return
+            }
+
+            self.fetchArtists(from: albumDTO.artists) { artists, error in
+                if let error = error {
+                    print("Error fetching artists for album \(albumId): \(error.localizedDescription)")
+                    let album = Album(from: albumDTO, artists: [])
+                    completion(album)
+                    return
+                }
+                
+                let album = Album(from: albumDTO, artists: artists ?? [])
+                completion(album)
+            }
+        }
+    }
+
+
+    
     // Update fetchArtists to use the custom mapping from ArtistDTO.toArtist
     func fetchArtists(from refs: [DocumentReference], completion: @escaping ([Artist]?, Error?) -> Void) {
         var artists: [Artist] = []

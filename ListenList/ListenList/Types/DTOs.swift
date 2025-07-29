@@ -79,18 +79,17 @@ struct AlbumDTO: Codable {
             
             let id = ref.documentID
             let name = data["name"] as? String ?? ""
-            // Adjust key if your Firestore uses "releaseDate" instead.
             let releaseDate = data["release_date"] as? String ?? ""
             let showOnList = data["showOnList"] as? Bool ?? false
             
-            // First, try to get images as an array of dictionaries.
+            // Correctly get the artist document references
+            let artistRefs = data["artists"] as? [DocumentReference] ?? []
+
             if let imageDicts = data["images"] as? [[String: Any]] {
                 let images = imageDicts.compactMap { ImageDTO.toImageResponse(from: $0) }
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: images, artists: [], showOnList: showOnList)
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: images, artists: artistRefs, showOnList: showOnList)
                 completion(albumDTO)
-            }
-            // Otherwise, try if images is an array of DocumentReference.
-            else if let imageRefs = data["images"] as? [DocumentReference] {
+            } else if let imageRefs = data["images"] as? [DocumentReference] {
                 var fetchedImages: [ImageResponse] = []
                 let group = DispatchGroup()
                 
@@ -105,17 +104,16 @@ struct AlbumDTO: Codable {
                 }
                 
                 group.notify(queue: .main) {
-                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: fetchedImages, artists: [], showOnList: showOnList)
+                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: fetchedImages, artists: artistRefs, showOnList: showOnList)
                     completion(albumDTO)
                 }
-            }
-            // If images isn’t of a recognized type, return an albumDTO with an empty images array.
-            else {
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: [], artists: [], showOnList: showOnList)
+            } else {
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: [], artists: artistRefs, showOnList: showOnList)
                 completion(albumDTO)
             }
         }
     }
+
 }
 
 // MARK: - SongDTO

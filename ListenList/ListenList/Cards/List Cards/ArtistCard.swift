@@ -53,7 +53,7 @@ struct ArtistCard: View {
                             case .success(let image):
                                 image.resizable()
                                     .cornerRadius(15.0)
-                                    .scaledToFill()
+                                    //.scaledToFill()
                             case .failure:
                                 placeholderImage
                             @unknown default:

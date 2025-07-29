@@ -35,18 +35,25 @@ struct Album: Identifiable, Hashable {
 }
 
 extension Album {
-    init?(from dto: AlbumDTO?) {
+    // This initializer takes an array of Artist objects.
+    init?(from dto: AlbumDTO?, artists: [Artist]) {
         guard let dto = dto else { return nil }
-        self.id = dto.id // Use the provided album document ID
-        // Convert the array of image DocumentReferences using the helper in AlbumDTO.toAlbum.
-        // Since we already fetched and converted images inside AlbumDTO.toAlbum, here we assume dto.images have been handled.
-        // For simplicity, we assume that by now the images are available as ImageResponse objects.
-        // If not, you may need to fetch these asynchronously.
-        // Here, we use a simple mapping if possible.
-        self.images = [] // As a placeholder. Alternatively, you can perform a similar mapping as done in AlbumDTO.toAlbum.
+        self.id = dto.id
+        self.images = dto.images
         self.name = dto.name
         self.release_date = dto.releaseDate
-        self.artists = [] // We cannot synchronously convert [DocumentReference] to [Artist]; fetch these separately.
+        self.artists = artists
+    }
+    
+    // Keep the old initializer for now, but we'll phase it out.
+    init?(from dto: AlbumDTO?) {
+        guard let dto = dto else { return nil }
+        self.id = dto.id
+        self.images = dto.images
+        self.name = dto.name
+        self.release_date = dto.releaseDate
+        // Initialize artists as an empty array, to be populated later.
+        self.artists = []
     }
 }
 
