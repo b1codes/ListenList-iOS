@@ -15,7 +15,8 @@ struct ArtistDTO: Codable {
     let name: String
     var images: [DocumentReference]?
     var popularity: Int?
-    
+    var showOnList: Bool? // Add this new field
+
     static func toArtist(from ref: DocumentReference, completion: @escaping (Artist?) -> Void) {
         ref.getDocument { (document, error) in
             if let error = error {
@@ -31,6 +32,7 @@ struct ArtistDTO: Codable {
             let id = ref.documentID
             let name = data["name"] as? String ?? ""
             let popularity = data["popularity"] as? Int ?? 0
+            let showOnList = data["showOnList"] as? Bool ?? false
             
             // Attempt to read images as an array of dictionaries.
             let imagesData = data["images"] as? [[String: Any]] ?? []
@@ -43,12 +45,14 @@ struct ArtistDTO: Codable {
                 images: images,
                 name: name,
                 popularity: popularity,
-                artistId: id
+                artistId: id,
+                showOnList: showOnList
             )
             completion(artist)
         }
     }
 }
+
 
 // MARK: - AlbumDTO
 
@@ -58,7 +62,8 @@ struct AlbumDTO: Codable {
     let releaseDate: String
     let images: [ImageResponse]
     let artists: [DocumentReference]  // If needed, you can later fetch these.
-    
+    var showOnList: Bool? // Add this new field
+
     static func toAlbum(from ref: DocumentReference, completion: @escaping (AlbumDTO?) -> Void) {
         ref.getDocument { (document, error) in
             if let error = error {
@@ -76,11 +81,12 @@ struct AlbumDTO: Codable {
             let name = data["name"] as? String ?? ""
             // Adjust key if your Firestore uses "releaseDate" instead.
             let releaseDate = data["release_date"] as? String ?? ""
+            let showOnList = data["showOnList"] as? Bool ?? false
             
             // First, try to get images as an array of dictionaries.
             if let imageDicts = data["images"] as? [[String: Any]] {
                 let images = imageDicts.compactMap { ImageDTO.toImageResponse(from: $0) }
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: images, artists: [])
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: images, artists: [], showOnList: showOnList)
                 completion(albumDTO)
             }
             // Otherwise, try if images is an array of DocumentReference.
@@ -99,13 +105,13 @@ struct AlbumDTO: Codable {
                 }
                 
                 group.notify(queue: .main) {
-                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: fetchedImages, artists: [])
+                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: fetchedImages, artists: [], showOnList: showOnList)
                     completion(albumDTO)
                 }
             }
             // If images isn’t of a recognized type, return an albumDTO with an empty images array.
             else {
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: [], artists: [])
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: [], artists: [], showOnList: showOnList)
                 completion(albumDTO)
             }
         }

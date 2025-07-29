@@ -176,6 +176,22 @@ class DatabaseManager {
     // MARK: - Add Functions
 
     func addSong(song: Song, completion: @escaping (Error?) -> Void) {
+        // Add the album but mark it as not to be shown on the list
+        addAlbum(album: song.album, showOnList: false) { error in
+            if let error = error {
+                print("Error adding album from song: \(error.localizedDescription)")
+            }
+        }
+        
+        // Add each artist but mark them as not to be shown on the list
+        for artist in song.artists {
+            addArtist(artist: artist, showOnList: false) { error in
+                if let error = error {
+                    print("Error adding artist from song: \(error.localizedDescription)")
+                }
+            }
+        }
+        
         let songData: [String: Any] = [
             "name": song.name,
             "popularity": song.popularity,
@@ -187,23 +203,34 @@ class DatabaseManager {
         db.collection("songs").document(song.id).setData(songData, completion: completion)
     }
 
-    func addAlbum(album: Album, completion: @escaping (Error?) -> Void) {
+    func addAlbum(album: Album, showOnList: Bool, completion: @escaping (Error?) -> Void) {
+        // Add each artist but mark them as not to be shown on the list
+        for artist in album.artists {
+            addArtist(artist: artist, showOnList: false) { error in
+                if let error = error {
+                    print("Error adding artist from album: \(error.localizedDescription)")
+                }
+            }
+        }
+        
         let albumData: [String: Any] = [
             "name": album.name,
             "release_date": album.release_date,
             "images": album.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
-            "artists": album.artists.map { db.collection("artists").document($0.id) }
+            "artists": album.artists.map { db.collection("artists").document($0.id) },
+            "showOnList": showOnList
         ]
-        db.collection("albums").document(album.id).setData(albumData, completion: completion)
+        db.collection("albums").document(album.id).setData(albumData, merge: true, completion: completion)
     }
 
-    func addArtist(artist: Artist, completion: @escaping (Error?) -> Void) {
+    func addArtist(artist: Artist, showOnList: Bool, completion: @escaping (Error?) -> Void) {
         let artistData: [String: Any] = [
             "name": artist.name,
             "popularity": artist.popularity ?? 0,
-            "images": artist.images?.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] } ?? []
+            "images": artist.images?.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] } ?? [],
+            "showOnList": showOnList
         ]
-        db.collection("artists").document(artist.id).setData(artistData, completion: completion)
+        db.collection("artists").document(artist.id).setData(artistData, merge: true, completion: completion)
     }
 
     // MARK: - Delete Functions

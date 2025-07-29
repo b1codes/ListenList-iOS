@@ -23,6 +23,7 @@ struct Artist: Identifiable, Hashable {
     var name: String
     var popularity: Int?
     var artistId: String
+    var showOnList: Bool? // Add this new property
 }
 
 struct Album: Identifiable, Hashable {

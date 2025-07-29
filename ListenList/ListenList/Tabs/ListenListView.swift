@@ -1,12 +1,5 @@
 // ListenList/ListenList/Tabs/ListenListView.swift
 
-//
-//  ListenListView.swift
-//  ListenList
-//
-//  Created by Brandon Lamer-Connolly on 10/11/24.
-//
-
 import SwiftUI
 import FirebaseFirestore
 
@@ -14,41 +7,84 @@ struct ListenListView: View {
     
     @State private var cards: [Card] = [] // Holds the list of cards
     @State private var songs: [Song] = []   // Use the SwiftUI-compatible Song type
+    @State private var albums: [Album] = []
+    @State private var artists: [Artist] = []
     @State private var isLoading = true     // Track loading state
     
     func createCard(from song: Song) -> Card {
-        let media = Media(input: .song(song)) // Wrap the Song in a MediaType
-        return Card(input: .song, media: media, id: song.id) // Create the Card
+        let media = Media(input: .song(song))
+        return Card(input: .song, media: media, id: song.id)
     }
     
-    func fetchSongList() {
-        var songIds: [String] = []
-        isLoading = true // Start loading
+    func createCard(from album: Album) -> Card {
+        let media = Media(input: .album(album))
+        return Card(input: .album, media: media, id: album.id)
+    }
+    
+    func createCard(from artist: Artist) -> Card {
+        let media = Media(input: .artist(artist))
+        return Card(input: .artist, media: media, id: artist.id)
+    }
+    
+    func fetchListenList() {
+        isLoading = true
+        let group = DispatchGroup()
         
-        // Fetch song IDs
+        var fetchedSongs: [Song] = []
+        var fetchedAlbums: [Album] = []
+        var fetchedArtists: [Artist] = []
+        
+        group.enter()
+        fetchSongList { songs in
+            fetchedSongs = songs
+            group.leave()
+        }
+        
+        group.enter()
+        fetchAlbumList { albums in
+            fetchedAlbums = albums
+            group.leave()
+        }
+        
+        group.enter()
+        fetchArtistList { artists in
+            fetchedArtists = artists
+            group.leave()
+        }
+        
+        group.notify(queue: .main) {
+            self.songs = fetchedSongs
+            self.albums = fetchedAlbums
+            self.artists = fetchedArtists
+            updateUI()
+        }
+    }
+    
+    func fetchSongList(completion: @escaping ([Song]) -> Void) {
+        var songIds: [String] = []
+        
         DatabaseManager.shared.fetchSongIds { documents, error in
             if let error = error {
                 print("Error fetching song IDs: \(error.localizedDescription)")
-                self.isLoading = false
+                completion([])
                 return
             }
             
             guard let documents = documents else {
                 print("No song documents found.")
-                self.isLoading = false
+                completion([])
                 return
             }
             
-            songIds = documents.map { $0.documentID } // Extract IDs
+            songIds = documents.map { $0.documentID }
             
             var fetchedSongs: [Song] = []
             let group = DispatchGroup()
             
-            // For each song ID, call fetchSong and then convert the DTO to a Song.
             for songId in songIds {
-                group.enter() // Enter group for fetchSong
+                group.enter()
                 DatabaseManager.shared.fetchSong(withId: songId) { songDTO, error in
-                    defer { group.leave() } // Mark fetchSong complete regardless
+                    defer { group.leave() }
                     
                     if let error = error {
                         print("Error fetching song with ID \(songId): \(error.localizedDescription)")
@@ -60,31 +96,95 @@ struct ListenListView: View {
                         return
                     }
                     
-                    // Wait for the asynchronous conversion from SongDTO to Song.
-                    group.enter() // Enter group for SongDTO.toSong
+                    group.enter()
                     SongDTO.toSong(from: songDTO) { song in
                         if let song = song {
                             fetchedSongs.append(song)
                         } else {
                             print("Failed to convert songDTO to Song for ID \(songId).")
                         }
-                        group.leave() // Mark SongDTO.toSong complete
+                        group.leave()
                     }
                 }
             }
             
-            // Notify when all asynchronous operations are finished.
             group.notify(queue: .main) {
-                self.updateUI(with: fetchedSongs)
+                completion(fetchedSongs)
             }
         }
     }
 
-    private func updateUI(with songs: [Song]) {
-        // Convert songs to cards and update the UI.
-        self.cards = songs.map { createCard(from: $0) }
+    func fetchAlbumList(completion: @escaping ([Album]) -> Void) {
+        DatabaseManager.shared.db.collection("albums").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching albums: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                completion([])
+                return
+            }
+            
+            var fetchedAlbums: [Album] = []
+            let group = DispatchGroup()
+            
+            for document in documents {
+                group.enter()
+                AlbumDTO.toAlbum(from: document.reference) { albumDTO in
+                    if let albumDTO = albumDTO, let album = Album(from: albumDTO) {
+                        fetchedAlbums.append(album)
+                    }
+                    group.leave()
+                }
+            }
+            
+            group.notify(queue: .main) {
+                completion(fetchedAlbums)
+            }
+        }
+    }
+    
+    func fetchArtistList(completion: @escaping ([Artist]) -> Void) {
+        DatabaseManager.shared.db.collection("artists").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching artists: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                completion([])
+                return
+            }
+            
+            var fetchedArtists: [Artist] = []
+            let group = DispatchGroup()
+            
+            for document in documents {
+                group.enter()
+                ArtistDTO.toArtist(from: document.reference) { artist in
+                    if let artist = artist {
+                        fetchedArtists.append(artist)
+                    }
+                    group.leave()
+                }
+            }
+            
+            group.notify(queue: .main) {
+                completion(fetchedArtists)
+            }
+        }
+    }
+
+    private func updateUI() {
+        let songCards = self.songs.map { createCard(from: $0) }
+        let albumCards = self.albums.map { createCard(from: $0) }
+        let artistCards = self.artists.map { createCard(from: $0) }
+        self.cards = songCards + albumCards + artistCards
         self.isLoading = false
-        print("Successfully loaded \(songs.count) songs.")
+        print("Successfully loaded \(self.songs.count) songs, \(self.albums.count) albums, and \(self.artists.count) artists.")
     }
 
     var body: some View {
@@ -92,20 +192,17 @@ struct ListenListView: View {
             ScrollView {
                 VStack {
                     if isLoading {
-                        ProgressView("Loading songs...")
-                    } else if songs.isEmpty && cards.isEmpty {
-                        Text("No songs found.")
+                        ProgressView("Loading...")
+                    } else if cards.isEmpty {
+                        Text("No items found.")
                     } else {
                         CardList(results: self.cards)
                     }
-//                    UNCOMMENT BELOW FOR DEBUGGING PURPOSES
-//                    Text("song count: \(songs.count)")
-//                    Text("card count: \(cards.count)")
                 }
             }
             .navigationTitle("Your ListenList")
             .onAppear {
-                fetchSongList()
+                fetchListenList()
             }
         }
     }
