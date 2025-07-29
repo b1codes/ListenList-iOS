@@ -10,18 +10,20 @@ import SwiftUI
 struct AlbumCard: View {
     var input: Media
     var album: Album?
-    var onAdd: (() -> Void)? // Action to perform when add is tapped
+    var onAdd: (() -> Void)?
+    var isInEditMode: Bool = false
+    var onDelete: (() -> Void)?
 
-    
     let maxHeight: CGFloat = 120
     
-    init(input: Media, onAdd: (() -> Void)? = nil) {
+    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
         self.input = input
         if case let .album(album) = input.input {
             self.album = album
         }
         self.onAdd = onAdd
-
+        self.isInEditMode = isInEditMode
+        self.onDelete = onDelete
     }
     
     private func artistsToStr() -> String {
@@ -45,80 +47,92 @@ struct AlbumCard: View {
         
         return AnyView(
             ZStack {
-                HStack(alignment: .center) {
-                    if album.images.isEmpty {
-                        placeholderImage
+                // Main Card Content
+                ZStack {
+                    HStack(alignment: .center) {
+                        if album.images.isEmpty {
+                            placeholderImage
+                                .blur(radius: 4.2)
+                                .frame(maxHeight: maxHeight)
+                        } else {
+                            AsyncImage(url: URL(string: album.images[0].url)) { phase in
+                                switch phase {
+                                case .empty:
+                                    ProgressView()
+                                case .success(let image):
+                                    image.resizable()
+                                        .cornerRadius(15.0)
+                                case .failure:
+                                    placeholderImage
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
                             .blur(radius: 4.2)
                             .frame(maxHeight: maxHeight)
-                    } else {
-                        AsyncImage(url: URL(string: album.images[0].url)) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                            case .success(let image):
-                                image.resizable()
-                                    .cornerRadius(15.0)
-                                    //.scaledToFill()
-                            case .failure:
-                                placeholderImage
-                            @unknown default:
-                                EmptyView()
-                            }
                         }
-                        .blur(radius: 4.2)
-                        .frame(maxHeight: maxHeight)
                     }
-                }
-                .cornerRadius(15.0)
-                
-                HStack {
+                    .cornerRadius(15.0)
+                    
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                         .frame(maxHeight: maxHeight)
-                }
-                .cornerRadius(15.0)
-                
-                HStack(alignment: .center) {
-                    if album.images.isEmpty {
-                        placeholderImage
-                    } else {
-                        AsyncImage(url: URL(string: album.images[0].url)) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                            case .success(let image):
-                                image.resizable()
-                                    .cornerRadius(15.0)
-                            case .failure:
-                                placeholderImage
-                            @unknown default:
-                                EmptyView()
+                    
+                    HStack(alignment: .center) {
+                        if album.images.isEmpty {
+                            placeholderImage
+                        } else {
+                            AsyncImage(url: URL(string: album.images[0].url)) { phase in
+                                switch phase {
+                                case .empty:
+                                    ProgressView()
+                                case .success(let image):
+                                    image.resizable()
+                                        .cornerRadius(15.0)
+                                case .failure:
+                                    placeholderImage
+                                @unknown default:
+                                    EmptyView()
+                                }
                             }
+                            .cornerRadius(15.0)
+                            .frame(maxWidth: 90, maxHeight: 90)
+                            .padding(.all)
                         }
-                        .cornerRadius(15.0)
-                        .frame(maxWidth: 90, maxHeight: 90)
-                        .padding(.all)
-                    }
-                    
-                    VStack(alignment: .leading) {
-                        Text(album.name)
-                            .bold()
-                            .lineLimit(1)
-                            .truncationMode(.tail)
                         
-                        Text(artistsToStr())
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                    .padding(.trailing)
-                    
-                    Spacer()
-                    // Show the add button only if the onAdd action is provided
-                    if let onAdd = onAdd {
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
+                        VStack(alignment: .leading) {
+                            Text(album.name)
+                                .bold()
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            
+                            Text(artistsToStr())
+                                .lineLimit(1)
+                                .truncationMode(.tail)
                         }
                         .padding(.trailing)
+                        
+                        Spacer()
+                        if let onAdd = onAdd {
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                            }
+                            .padding(.trailing)
+                        }
+                    }
+                }
+                
+                // Overlay for Edit Mode
+                if isInEditMode {
+                    Color.black.opacity(0.5)
+                        .cornerRadius(15.0)
+                    
+                    if let onDelete = onDelete {
+                        Button(action: onDelete) {
+                            Image(systemName: "trash.circle.fill")
+                                .font(.largeTitle)
+                                .foregroundColor(.red)
+                        }
                     }
                 }
             }
@@ -126,16 +140,4 @@ struct AlbumCard: View {
             .padding([.leading, .trailing], 10)
         )
     }
-}
-
-
-#Preview {
-    let mockAlbum = Album(
-        id: "123",
-        images: [ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273f76f8deeba5370c98ad38f1c", height: 640, width: 640)],
-        name: "Mock Album",
-        release_date: "2023-01-01",
-        artists: [Artist(id: "012", name: "Mock Artist", artistId: "123")]
-    )
-    AlbumCard(input: Media(input: .album(mockAlbum)))
 }

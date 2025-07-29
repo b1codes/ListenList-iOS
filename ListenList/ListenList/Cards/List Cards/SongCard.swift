@@ -10,16 +10,18 @@ import SwiftUI
 struct SongCard: View {
     var input: Media
     var song: Song?
-    var onAdd: (() -> Void)? // Action to perform when add is tapped
+    var onAdd: (() -> Void)?
+    var isInEditMode: Bool = false
+    var onDelete: (() -> Void)?
 
-    
-    init(input: Media, onAdd: (() -> Void)? = nil) {
+    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
         self.input = input
         if case let .song(song) = input.input {
             self.song = song
         }
         self.onAdd = onAdd
-
+        self.isInEditMode = isInEditMode
+        self.onDelete = onDelete
     }
 
     let maxHeight: CGFloat = 120
@@ -39,14 +41,13 @@ struct SongCard: View {
     }
 
     var body: some View {
-        // If there's no song, return an empty view.
         guard let song = song else {
             return AnyView(EmptyView())
         }
         
-        // Use if/else to return different views based on URL creation.
-        if URL(string: song.album.images[0].url) != nil {
-            return AnyView(
+        return AnyView(
+            ZStack {
+                // Main Card Content
                 ZStack {
                     HStack(alignment: .center) {
                         if song.album.images.isEmpty {
@@ -61,7 +62,6 @@ struct SongCard: View {
                                         ProgressView()
                                             .frame(width: geo.size.width, height: geo.size.height)
                                     case .success(let image): image.resizable()
-                                            //.scaledToFill()
                                             .frame(width: geo.size.width, height: geo.size.height)
                                             .clipped()
                                             .cornerRadius(15)
@@ -78,12 +78,9 @@ struct SongCard: View {
                     }
                     .cornerRadius(15.0)
                     
-                    HStack {
-                        RoundedRectangle(cornerRadius: 15.0)
-                            .foregroundColor(Color.gray.opacity(0.7))
-                            .frame(maxHeight: maxHeight)
-                    }
-                    .cornerRadius(15.0)
+                    RoundedRectangle(cornerRadius: 15.0)
+                        .foregroundColor(Color.gray.opacity(0.7))
+                        .frame(maxHeight: maxHeight)
                     
                     HStack(alignment: .center) {
                         if song.album.images.isEmpty {
@@ -97,11 +94,9 @@ struct SongCard: View {
                                             .frame(width: proxy.size.width, height: proxy.size.height)
                                     case .success(let image):
                                         image.resizable()
-                                            //.scaledToFill()
                                             .frame(width: proxy.size.width, height: proxy.size.height)
                                             .clipped()
                                             .cornerRadius(15)
-                                            .overlay(EmptyView().id(UUID()))
                                     case .failure:
                                         placeholderImage
                                             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -134,7 +129,6 @@ struct SongCard: View {
                         
                         Spacer()
                         
-                        // Show the add button only if the onAdd action is provided
                         if let onAdd = onAdd {
                             Button(action: onAdd) {
                                 Image(systemName: "plus.circle.fill")
@@ -143,70 +137,23 @@ struct SongCard: View {
                         }
                     }
                 }
-                .frame(maxWidth: 600, maxHeight: maxHeight)
-                .padding([.leading, .trailing], 10)
-            )
-        } else {
-            // If URL init fails, return an alternative view.
-            return AnyView(
-                ZStack {
-                    placeholderImage
-                        .blur(radius: 4.2)
-                        .frame(maxHeight: maxHeight)
-                    RoundedRectangle(cornerRadius: 15.0)
-                        .foregroundColor(Color.gray.opacity(0.7))
-                    HStack {
-                        placeholderImage
-                        VStack(alignment: .leading) {
-                            HStack {
-                                Text(song.name)
-                                    .bold()
-                                    .lineLimit(1)
-                                    .frame(maxWidth: 220, alignment: .leading)
-                                    .truncationMode(.tail)
-                                if song.explicit {
-                                    Image(systemName: "e.square.fill")
-                                }
-                            }
-                            Text(artistsToStr())
-                                .lineLimit(1)
-                                .frame(maxWidth: 220, alignment: .leading)
-                                .truncationMode(.tail)
-                        }
-                        .padding(.trailing)
-                        Spacer()
-                        // Show the add button only if the onAdd action is provided
-                        if let onAdd = onAdd {
-                            Button(action: onAdd) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title)
-                                    .foregroundColor(.green)
-                            }
-                            .padding(.trailing)
+                
+                // Overlay for Edit Mode
+                if isInEditMode {
+                    Color.black.opacity(0.5)
+                        .cornerRadius(15.0)
+                    
+                    if let onDelete = onDelete {
+                        Button(action: onDelete) {
+                            Image(systemName: "trash.circle.fill")
+                                .font(.largeTitle)
+                                .foregroundColor(.red)
                         }
                     }
                 }
-                .frame(maxWidth: 600, maxHeight: maxHeight)
-                .padding([.leading, .trailing], 10)
-            )
-        }
+            }
+            .frame(maxWidth: 600, maxHeight: maxHeight)
+            .padding([.leading, .trailing], 10)
+        )
     }
-}
-
-#Preview {
-    let mockSong = Song(
-        id: "001",
-        album: Album(
-            id: "012", images: [ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273f76f8deeba5370c98ad38f1c", height: 640, width: 640)],
-            name: "Chemical",
-            release_date: "2023-04-14",
-            artists: [Artist(id: "011", name: "Post Malone", artistId: "246dkjvS1zLTtiykXe5h60")]
-        ),
-        artists: [Artist(id: "0112", name: "Post Malone", artistId: "246dkjvS1zLTtiykXe5h60")],
-        duration_ms: 184013,
-        name: "Chemical",
-        popularity: 88,
-        explicit: true
-    )
-    SongCard(input: Media(input: .song(mockSong)))
 }

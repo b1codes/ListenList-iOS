@@ -10,7 +10,8 @@ struct ListenListView: View {
     @State private var albums: [Album] = []
     @State private var artists: [Artist] = []
     @State private var isLoading = true     // Track loading state
-    
+    @State private var isInEditMode = false // State for edit mode
+
     func createCard(from song: Song) -> Card {
         let media = Media(input: .song(song))
         return Card(input: .song, media: media, id: song.id)
@@ -187,6 +188,35 @@ struct ListenListView: View {
         print("Successfully loaded \(self.songs.count) songs, \(self.albums.count) albums, and \(self.artists.count) artists.")
     }
 
+    private func delete(card: Card) {
+        switch card.type {
+        case .song:
+            DatabaseManager.shared.deleteSong(withId: card.id) { error in
+                if let error = error {
+                    print("Error deleting song: \(error.localizedDescription)")
+                } else {
+                    fetchListenList()
+                }
+            }
+        case .album:
+            DatabaseManager.shared.deleteAlbum(withId: card.id) { error in
+                if let error = error {
+                    print("Error deleting album: \(error.localizedDescription)")
+                } else {
+                    fetchListenList()
+                }
+            }
+        case .artist:
+            DatabaseManager.shared.deleteArtist(withId: card.id) { error in
+                if let error = error {
+                    print("Error deleting artist: \(error.localizedDescription)")
+                } else {
+                    fetchListenList()
+                }
+            }
+        }
+    }
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -196,11 +226,20 @@ struct ListenListView: View {
                     } else if cards.isEmpty {
                         Text("No items found.")
                     } else {
-                        CardList(results: self.cards)
+                        CardList(results: self.cards, isInEditMode: isInEditMode, onDelete: delete)
                     }
                 }
             }
             .navigationTitle("Your ListenList")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(isInEditMode ? "Done" : "Edit") {
+                        withAnimation {
+                            isInEditMode.toggle()
+                        }
+                    }
+                }
+            }
             .onAppear {
                 fetchListenList()
             }
