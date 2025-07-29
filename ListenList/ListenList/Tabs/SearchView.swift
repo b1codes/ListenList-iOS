@@ -1,3 +1,5 @@
+// ListenList/ListenList/Tabs/SearchView.swift
+
 import SwiftUI
 
 struct SearchView: View {
@@ -114,8 +116,38 @@ struct SearchView: View {
         isTextFieldFocused = false // Clear keyboard focus
     }
     
-
-
+    func addSongToDatabase(card: Card) {
+        if case let .song(song) = card.input.input {
+            // Add the album
+            DatabaseManager.shared.addAlbum(album: song.album) { error in
+                if let error = error {
+                    print("Error adding album to database: \(error.localizedDescription)")
+                } else {
+                    print("Album added successfully!")
+                }
+            }
+            
+            // Add each artist
+            for artist in song.artists {
+                DatabaseManager.shared.addArtist(artist: artist) { error in
+                    if let error = error {
+                        print("Error adding artist to database: \(error.localizedDescription)")
+                    } else {
+                        print("Artist added successfully!")
+                    }
+                }
+            }
+            
+            // Add the song
+            DatabaseManager.shared.addSong(song: song) { error in
+                if let error = error {
+                    print("Error adding song to database: \(error.localizedDescription)")
+                } else {
+                    print("Song added to database successfully!")
+                }
+            }
+        }
+    }
 
     var body: some View {
         NavigationView {
@@ -158,7 +190,7 @@ struct SearchView: View {
                         ProgressView("Searching...").padding()
                     }
                     
-                    CardList(results: cards)
+                    CardList(results: cards, onAdd: addSongToDatabase)
                 }
                 
             }
