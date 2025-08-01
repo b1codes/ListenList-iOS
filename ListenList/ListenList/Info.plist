@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>REDIRECT_URI_HOST</key>
+	<string>$(REDIRECT_URI_HOST)</string>
+	<key>REDIRECT_URI_SCHEME</key>
+	<string>$(REDIRECT_URI_SCHEME)</string>
 	<key>SPOTIFY_API_CLIENT_ID</key>
 	<string>$(SPOTIFY_API_CLIENT_ID)</string>
 	<key>SPOTIFY_API_CLIENT_SECRET</key>

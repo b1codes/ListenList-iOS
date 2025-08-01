@@ -67,12 +67,16 @@ struct ListenListApp: App {
         components.host = "accounts.spotify.com"
         components.path = "/authorize"
         let SPOTIFY_API_CLIENT_ID = Bundle.main.object(forInfoDictionaryKey: "SPOTIFY_API_CLIENT_ID") as? String
+        let REDIRECT_URI_HOST = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_HOST") as? String
+        let REDIRECT_URI_SCHEME = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_SCHEME") as? String
 
+        let redirectURI = "\(REDIRECT_URI_SCHEME ?? "")://\(REDIRECT_URI_HOST ?? "")"
         let state = generateRandomString(length: 16)
         let scope = "user-read-private user-read-email user-top-read"
         let clientId = SPOTIFY_API_CLIENT_ID
         let responseType = "code"
-        let redirectURI = "https://www.google.com"
+        print(redirectURI)
+
         components.queryItems = [
             URLQueryItem(name: "state", value: state),
             URLQueryItem(name: "scope", value: scope),

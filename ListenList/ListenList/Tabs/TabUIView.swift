@@ -62,8 +62,10 @@ struct TabUIView: View {
         print(comboEncoded!)
         urlRequest.httpMethod = "POST"
         urlRequest.allHTTPHeaderFields = ["Authorization" : "Basic \(comboEncoded!)", "Content-Type" : "application/x-www-form-urlencoded"]
-        
-        let redirectURI = "https://www.google.com"
+        let REDIRECT_URI_HOST = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_HOST") as? String
+        let REDIRECT_URI_SCHEME = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_SCHEME") as? String
+
+        let redirectURI = "\(REDIRECT_URI_SCHEME ?? "")://\(REDIRECT_URI_HOST ?? "")"
         let grantType = "authorization_code"
         var components = URLComponents()
         //print("code is \(code)")
