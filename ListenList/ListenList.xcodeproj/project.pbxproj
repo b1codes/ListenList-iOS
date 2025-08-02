@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		71C478882E3D90FC00BBCF6E /* KeychainSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 71C478872E3D90FC00BBCF6E /* KeychainSwift */; };
 		CA8462E82D277D46005BB9DC /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = CA8462E72D277D46005BB9DC /* FirebaseAnalytics */; };
 		CA8462EA2D277D46005BB9DC /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = CA8462E92D277D46005BB9DC /* FirebaseAnalyticsOnDeviceConversion */; };
 		CA8462EC2D277D46005BB9DC /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = CA8462EB2D277D46005BB9DC /* FirebaseAnalyticsWithoutAdIdSupport */; };
@@ -111,6 +112,7 @@
 				CA8463022D277F9D005BB9DC /* FirebaseCrashlytics in Frameworks */,
 				CA8463102D277F9D005BB9DC /* FirebaseInAppMessaging-Beta in Frameworks */,
 				CA8463142D277F9D005BB9DC /* FirebaseMLModelDownloader in Frameworks */,
+				71C478882E3D90FC00BBCF6E /* KeychainSwift in Frameworks */,
 				CA8462F42D277F9D005BB9DC /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
 				CA8462F02D277D46005BB9DC /* FirebaseAppDistribution-Beta in Frameworks */,
 				CA8463122D277F9D005BB9DC /* FirebaseInstallations in Frameworks */,
@@ -267,6 +269,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				CA8462E62D277D46005BB9DC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				71C478862E3D90FC00BBCF6E /* XCRemoteSwiftPackageReference "keychain-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CA02F9EB2CB9AE2B0027BD8B /* Products */;
@@ -637,6 +640,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		71C478862E3D90FC00BBCF6E /* XCRemoteSwiftPackageReference "keychain-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/evgenyneu/keychain-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 24.0.0;
+			};
+		};
 		CA8462E62D277D46005BB9DC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -648,6 +659,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		71C478872E3D90FC00BBCF6E /* KeychainSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 71C478862E3D90FC00BBCF6E /* XCRemoteSwiftPackageReference "keychain-swift" */;
+			productName = KeychainSwift;
+		};
 		CA8462E72D277D46005BB9DC /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CA8462E62D277D46005BB9DC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
