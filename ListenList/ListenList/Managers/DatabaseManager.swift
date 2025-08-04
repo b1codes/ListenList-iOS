@@ -247,6 +247,13 @@ class DatabaseManager {
         ]
         db.collection("albums").document(album.id).setData(albumData, merge: true, completion: completion)
     }
+    
+    func updateArtistShowOnList(withId artistId: String, showOnList: Bool, completion: @escaping (Error?) -> Void) {
+        db.collection("artists").document(artistId).updateData([
+            "showOnList": showOnList
+        ], completion: completion)
+    }
+
 
     func addArtist(artist: Artist, showOnList: Bool, completion: @escaping (Error?) -> Void) {
         let artistData: [String: Any] = [

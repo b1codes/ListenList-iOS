@@ -207,9 +207,9 @@ struct ListenListView: View {
                 }
             }
         case .artist:
-            DatabaseManager.shared.deleteArtist(withId: card.id) { error in
+            DatabaseManager.shared.updateArtistShowOnList(withId: card.id, showOnList: false) { error in
                 if let error = error {
-                    print("Error deleting artist: \(error.localizedDescription)")
+                    print("Error updating artist: \(error.localizedDescription)")
                 } else {
                     fetchListenList()
                 }

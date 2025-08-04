@@ -120,27 +120,6 @@ struct SearchView: View {
         switch card.type {
         case .song:
             if case let .song(song) = card.input.input {
-                // When adding a song, the album's showOnList should be false
-                DatabaseManager.shared.addAlbum(album: song.album, showOnList: false) { error in
-                    if let error = error {
-                        print("Error adding album to database: \(error.localizedDescription)")
-                    } else {
-                        print("Album added successfully!")
-                    }
-                }
-                
-                // Add each artist but mark them as not to be shown on the list
-                for artist in song.artists {
-                    DatabaseManager.shared.addArtist(artist: artist, showOnList: false) { error in
-                        if let error = error {
-                            print("Error adding artist to database: \(error.localizedDescription)")
-                        } else {
-                            print("Artist added successfully!")
-                        }
-                    }
-                }
-                
-                // Add the song
                 DatabaseManager.shared.addSong(song: song) { error in
                     if let error = error {
                         print("Error adding song to database: \(error.localizedDescription)")
@@ -151,7 +130,6 @@ struct SearchView: View {
             }
         case .album:
             if case let .album(album) = card.input.input {
-                // When adding an album directly, showOnList is true
                 DatabaseManager.shared.addAlbum(album: album, showOnList: true) { error in
                     if let error = error {
                         print("Error adding album to database: \(error.localizedDescription)")
@@ -162,7 +140,6 @@ struct SearchView: View {
             }
         case .artist:
             if case let .artist(artist) = card.input.input {
-                // When adding an artist directly, showOnList is true
                 DatabaseManager.shared.addArtist(artist: artist, showOnList: true) { error in
                     if let error = error {
                         print("Error adding artist to database: \(error.localizedDescription)")
