@@ -41,83 +41,67 @@ struct ArtistCard: View {
         }
         
         return AnyView(
-            ZStack {
-                // Main Card Content
+            ZStack(alignment: .leading) { // Set alignment for the whole ZStack
+                // Layer 1: Background
                 ZStack {
-                    HStack(alignment: .center) {
-                        if artist.images == nil || artist.images!.isEmpty {
-                            placeholderImage
-                                .blur(radius: 4.2)
-                                .frame(maxHeight: maxHeight)
-                        } else {
-                            AsyncImage(url: URL(string: artist.images![0].url)) { phase in
-                                switch phase {
-                                case .empty:
-                                    ProgressView()
-                                case .success(let image):
-                                    image.resizable()
-                                        .cornerRadius(15.0)
-                                case .failure:
-                                    placeholderImage
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                            .blur(radius: 4.2)
-                            .frame(maxHeight: maxHeight)
+                    if !artist.images!.isEmpty {
+                        AsyncImage(url: URL(string: artist.images![0].url)) { phase in
+                            if let image = phase.image {
+                                image.resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .blur(radius: 4.2)
+                            } else { Color.clear }
                         }
                     }
-                    .cornerRadius(15.0)
-                    
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
-                        .frame(maxHeight: maxHeight)
+                }
+                .frame(maxHeight: maxHeight)
+                .cornerRadius(15.0)
+                .clipped()
+
+                // Layer 2: Main Content
+                HStack(spacing: 15) {
+                    if artist.images!.isEmpty {
+                        placeholderImage
+                    } else {
+                        AsyncImage(url: URL(string: artist.images![0].url)) { phase in
+                            if let image = phase.image {
+                                image.resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .cornerRadius(10.0)
+                            } else { ProgressView() }
+                        }
+                        .frame(width: 90, height: 90)
+                    }
                     
-                    HStack(alignment: .center) {
-                        if artist.images == nil || artist.images!.isEmpty {
-                            placeholderImage
-                        } else {
-                            AsyncImage(url: URL(string: artist.images![0].url)) { phase in
-                                switch phase {
-                                case .empty:
-                                    ProgressView()
-                                case .success(let image):
-                                    image.resizable()
-                                        .cornerRadius(15.0)
-                                case .failure:
-                                    placeholderImage
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                            .cornerRadius(15.0)
-                            .frame(maxWidth: 90, maxHeight: 90)
-                            .padding(.all)
-                        }
-                        
-                        VStack(alignment: .leading) {
-                            Text(artist.name)
-                                .bold()
-                                .lineLimit(2)
-                                .truncationMode(.tail)
-                        }
-                        .padding(.trailing)
-                        
-                        Spacer()
-                        if let onAdd = onAdd {
-                            Button(action: onAdd) {
-                                Image(systemName: "plus.circle.fill")
-                            }
-                            .padding(.trailing)
+                    VStack(alignment: .leading) {
+                        Text(artist.name).bold()
+                    }
+                    
+                    Spacer()
+                    
+                    if let onAdd = onAdd {
+                        Button(action: onAdd) {
+                            Image(systemName: "plus.circle.fill").font(.title)
                         }
                     }
                 }
+                .padding(.leading, 35)
+                .padding(.trailing, 15)
+
+                // Layer 3: Rotated Text - THE FIX
+                Text("ARTIST")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .fixedSize() // Allow the text to have its natural size
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 20, height: maxHeight) // Give it a minimal frame and center it
+                    .padding(.leading, 8)
                 
-                // Overlay for Edit Mode
+                // Layer 4: Edit Mode Overlay
                 if isInEditMode {
-                    Color.black.opacity(0.5)
-                        .cornerRadius(15.0)
-                    
+                    Color.black.opacity(0.5).cornerRadius(15.0)
                     if let onDelete = onDelete {
                         Button(action: onDelete) {
                             Image(systemName: "trash.circle.fill")

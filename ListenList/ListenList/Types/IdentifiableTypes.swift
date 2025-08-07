@@ -32,6 +32,7 @@ struct Album: Identifiable, Hashable {
     var name: String
     var release_date: String
     var artists: [Artist]
+    var album_type: String
 }
 
 extension Album {
@@ -43,6 +44,7 @@ extension Album {
         self.name = dto.name
         self.release_date = dto.releaseDate
         self.artists = artists
+        self.album_type = dto.albumType
     }
     
     // Keep the old initializer for now, but we'll phase it out.
@@ -54,6 +56,7 @@ extension Album {
         self.release_date = dto.releaseDate
         // Initialize artists as an empty array, to be populated later.
         self.artists = []
+        self.album_type = dto.albumType
     }
 }
 

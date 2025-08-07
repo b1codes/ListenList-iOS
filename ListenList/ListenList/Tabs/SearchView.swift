@@ -39,7 +39,7 @@ struct SearchView: View {
                let albums = albumSearchResults.albums {
                 return albums.items.map { album in
                     let artists = album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
-                    return Card(input: .album, media: Media(input: .album(Album(id: album.id, images: album.images, name: album.name, release_date: album.release_date, artists: artists))), id: album.id)
+                    return Card(input: .album, media: Media(input: .album(Album(id: album.id, images: album.images, name: album.name, release_date: album.release_date, artists: artists, album_type: album.album_type))), id: album.id)
                 }
             }
         } catch {
@@ -56,7 +56,7 @@ struct SearchView: View {
                 return songs.items.map { song in
                     let albumArtists = song.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
                     let songArtists = song.artists.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) }
-                    return Card(input: .song, media: Media(input: .song(Song(id: song.id, album: Album(id: song.album.id, images: song.album.images, name: song.album.name, release_date: song.album.release_date, artists: albumArtists), artists: songArtists, duration_ms: song.duration_ms, name: song.name, popularity: song.popularity, explicit: song.explicit))), id: song.id)
+                    return Card(input: .song, media: Media(input: .song(Song(id: song.id, album: Album(id: song.album.id, images: song.album.images, name: song.album.name, release_date: song.album.release_date, artists: albumArtists, album_type: song.album.album_type), artists: songArtists, duration_ms: song.duration_ms, name: song.name, popularity: song.popularity, explicit: song.explicit))), id: song.id)
                     
                 }
             }

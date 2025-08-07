@@ -64,6 +64,7 @@ struct AlbumResponse: Codable, Hashable {
     var name: String
     var release_date: String
     var artists: [ArtistResponse]?
+    var album_type: String
     var id: String
 }
 

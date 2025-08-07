@@ -60,6 +60,7 @@ struct AlbumDTO: Codable {
     let id: String
     let name: String
     let releaseDate: String
+    let albumType: String
     let images: [ImageResponse]
     let artists: [DocumentReference]  // If needed, you can later fetch these.
     var showOnList: Bool? // Add this new field
@@ -80,6 +81,7 @@ struct AlbumDTO: Codable {
             let id = ref.documentID
             let name = data["name"] as? String ?? ""
             let releaseDate = data["release_date"] as? String ?? ""
+            let albumType = data["album_type"] as? String ?? ""
             let showOnList = data["showOnList"] as? Bool ?? false
             
             // Correctly get the artist document references
@@ -87,7 +89,7 @@ struct AlbumDTO: Codable {
 
             if let imageDicts = data["images"] as? [[String: Any]] {
                 let images = imageDicts.compactMap { ImageDTO.toImageResponse(from: $0) }
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: images, artists: artistRefs, showOnList: showOnList)
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: images, artists: artistRefs, showOnList: showOnList)
                 completion(albumDTO)
             } else if let imageRefs = data["images"] as? [DocumentReference] {
                 var fetchedImages: [ImageResponse] = []
@@ -104,11 +106,11 @@ struct AlbumDTO: Codable {
                 }
                 
                 group.notify(queue: .main) {
-                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: fetchedImages, artists: artistRefs, showOnList: showOnList)
+                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: fetchedImages, artists: artistRefs, showOnList: showOnList)
                     completion(albumDTO)
                 }
             } else {
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, images: [], artists: artistRefs, showOnList: showOnList)
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: [], artists: artistRefs, showOnList: showOnList)
                 completion(albumDTO)
             }
         }
@@ -181,7 +183,8 @@ struct SongDTO: Codable {
                         images: albumDTO.images, // Now we include fetched images.
                         name: albumDTO.name,
                         release_date: albumDTO.releaseDate,
-                        artists: [] // Fetch album artists if required.
+                        artists: [],
+                        album_type: albumDTO.albumType// Fetch album artists if required.
                     ),
                     artists: artists,
                     duration_ms: dto.durationMs,
