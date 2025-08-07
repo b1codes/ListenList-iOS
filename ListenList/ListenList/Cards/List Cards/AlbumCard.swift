@@ -75,7 +75,9 @@ struct AlbumCard: View {
                     
                     VStack(alignment: .leading) {
                         Text(album.name).bold()
+                            .lineLimit(2)
                         Text(artistsToStr())
+                            .lineLimit(1)
                     }
                     
                     Spacer()

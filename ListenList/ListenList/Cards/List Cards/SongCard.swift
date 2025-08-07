@@ -81,8 +81,14 @@ struct SongCard: View {
                     }
                     
                     VStack(alignment: .leading) {
-                        Text(song.name).bold()
-                        Text(artistsToStr())
+                        HStack{
+                            Text(song.name).bold()
+                                .lineLimit(2)
+                            if song.explicit {
+                                Image(systemName: "e.square.fill")
+                            }
+                        }
+                        Text(artistsToStr()).lineLimit(1)
                     }
                     
                     Spacer()

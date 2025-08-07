@@ -77,6 +77,7 @@ struct ArtistCard: View {
                     
                     VStack(alignment: .leading) {
                         Text(artist.name).bold()
+                            .lineLimit(2)
                     }
                     
                     Spacer()
