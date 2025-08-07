@@ -33,6 +33,7 @@ struct Album: Identifiable, Hashable {
     var release_date: String
     var artists: [Artist]
     var album_type: String
+    var isExplicit: Bool? = false
 }
 
 extension Album {
@@ -45,6 +46,7 @@ extension Album {
         self.release_date = dto.releaseDate
         self.artists = artists
         self.album_type = dto.albumType
+        self.isExplicit = dto.isExplicit
     }
     
     // Keep the old initializer for now, but we'll phase it out.
@@ -57,7 +59,19 @@ extension Album {
         // Initialize artists as an empty array, to be populated later.
         self.artists = []
         self.album_type = dto.albumType
+        self.isExplicit = dto.isExplicit
     }
+    
+    init(id: String, images: [ImageResponse], name: String, release_date: String, artists: [Artist], album_type: String, isExplicit: Bool) {
+        self.id = id
+        self.images = images
+        self.name = name
+        self.release_date = release_date
+        self.artists = artists
+        self.album_type = album_type
+        self.isExplicit = isExplicit
+    }
+
 }
 
 extension Artist {

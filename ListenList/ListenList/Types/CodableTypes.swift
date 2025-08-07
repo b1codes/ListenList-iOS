@@ -89,3 +89,11 @@ struct AccessTokenResponse: Codable {
     let expires_in: Int
     let refresh_token: String?
 }
+
+struct AlbumTracksResponse: Codable, Hashable {
+    var items: [TrackItem]
+}
+
+struct TrackItem: Codable, Hashable {
+    var explicit: Bool
+}

@@ -243,7 +243,8 @@ class DatabaseManager {
             "release_date": album.release_date,
             "images": album.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
             "artists": album.artists.map { db.collection("artists").document($0.id) },
-            "showOnList": showOnList
+            "showOnList": showOnList,
+            "album_type": album.album_type
         ]
         db.collection("albums").document(album.id).setData(albumData, merge: true, completion: completion)
     }

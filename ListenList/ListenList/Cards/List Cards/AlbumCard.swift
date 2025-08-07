@@ -74,8 +74,15 @@ struct AlbumCard: View {
                     }
                     
                     VStack(alignment: .leading) {
-                        Text(album.name).bold()
-                            .lineLimit(2)
+                        HStack {
+                            Text(album.name).bold()
+                                .lineLimit(2)
+                            if album.isExplicit ?? false {
+                                Image(systemName: "e.square.fill")
+
+                            }
+                        }
+                        
                         Text(artistsToStr())
                             .lineLimit(1)
                     }
@@ -92,7 +99,7 @@ struct AlbumCard: View {
                 .padding(.trailing, 15)
 
                 // Layer 3: Rotated Text - THE FIX
-                Text(album.album_type.uppercased())
+                Text(album.album_type.uppercased().isEmpty ? "ALBUM" : album.album_type.uppercased())
                     .font(.caption)
                     .fontWeight(.bold)
                     .fixedSize() // Allow the text to have its natural size

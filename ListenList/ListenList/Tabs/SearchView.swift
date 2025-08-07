@@ -37,10 +37,29 @@ struct SearchView: View {
         do {
             if let albumSearchResults = try await searchManager.search(query: searchText, type: "album"),
                let albums = albumSearchResults.albums {
-                return albums.items.map { album in
-                    let artists = album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
-                    return Card(input: .album, media: Media(input: .album(Album(id: album.id, images: album.images, name: album.name, release_date: album.release_date, artists: artists, album_type: album.album_type))), id: album.id)
+                
+                var albumCards: [Card] = []
+                for albumResponse in albums.items {
+                    var isExplicit = false
+                    if let tracksResponse = try await searchManager.getAlbumTracks(albumId: albumResponse.id) {
+                        if tracksResponse.items.contains(where: { $0.explicit }) {
+                            isExplicit = true
+                        }
+                    }
+
+                    let artists = albumResponse.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
+                    let album = Album(
+                        id: albumResponse.id,
+                        images: albumResponse.images,
+                        name: albumResponse.name,
+                        release_date: albumResponse.release_date,
+                        artists: artists,
+                        album_type: albumResponse.album_type,
+                        isExplicit: isExplicit
+                    )
+                    albumCards.append(Card(input: .album, media: Media(input: .album(album)), id: album.id))
                 }
+                return albumCards
             }
         } catch {
             print("Error during album search: \(error)")

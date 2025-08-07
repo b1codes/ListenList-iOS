@@ -64,6 +64,7 @@ struct AlbumDTO: Codable {
     let images: [ImageResponse]
     let artists: [DocumentReference]  // If needed, you can later fetch these.
     var showOnList: Bool? // Add this new field
+    let isExplicit: Bool?
 
     static func toAlbum(from ref: DocumentReference, completion: @escaping (AlbumDTO?) -> Void) {
         ref.getDocument { (document, error) in
@@ -83,13 +84,14 @@ struct AlbumDTO: Codable {
             let releaseDate = data["release_date"] as? String ?? ""
             let albumType = data["album_type"] as? String ?? ""
             let showOnList = data["showOnList"] as? Bool ?? false
+            let isExplicit = data["isExplicit"] as? Bool ?? false
             
             // Correctly get the artist document references
             let artistRefs = data["artists"] as? [DocumentReference] ?? []
 
             if let imageDicts = data["images"] as? [[String: Any]] {
                 let images = imageDicts.compactMap { ImageDTO.toImageResponse(from: $0) }
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: images, artists: artistRefs, showOnList: showOnList)
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: images, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit)
                 completion(albumDTO)
             } else if let imageRefs = data["images"] as? [DocumentReference] {
                 var fetchedImages: [ImageResponse] = []
@@ -106,11 +108,11 @@ struct AlbumDTO: Codable {
                 }
                 
                 group.notify(queue: .main) {
-                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: fetchedImages, artists: artistRefs, showOnList: showOnList)
+                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: fetchedImages, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit)
                     completion(albumDTO)
                 }
             } else {
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: [], artists: artistRefs, showOnList: showOnList)
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: [], artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit)
                 completion(albumDTO)
             }
         }

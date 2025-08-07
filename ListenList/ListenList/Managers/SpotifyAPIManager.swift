@@ -57,4 +57,33 @@ class SpotifyAPIManager: ObservableObject {
             throw error
         }
     }
+    
+    func getAlbumTracks(albumId: String) async throws -> AlbumTracksResponse? {
+            let urlStr = "https://api.spotify.com/v1/albums/\(albumId)/tracks"
+            let authorizationAccessTokenStr = accessToken
+            let authorizationTokenTypeStr = tokenType
+            let requestHeaders: [String: String] = ["Authorization": "\(authorizationTokenTypeStr) \(authorizationAccessTokenStr)"]
+            
+            guard let url = URL(string: urlStr) else {
+                throw URLError(.badURL)
+            }
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.allHTTPHeaderFields = requestHeaders
+            
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                
+                guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                let responseObject = try JSONDecoder().decode(AlbumTracksResponse.self, from: data)
+                return responseObject
+                
+            } catch {
+                print("Error occurred during the search: \(error)")
+                throw error
+            }
+        }
 }
