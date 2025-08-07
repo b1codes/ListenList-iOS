@@ -68,7 +68,7 @@ struct ArtistCard: View {
                         AsyncImage(url: URL(string: artist.images![0].url)) { phase in
                             if let image = phase.image {
                                 image.resizable()
-                                    .aspectRatio(contentMode: .fit)
+                                    //.aspectRatio(contentMode: .fit)
                                     .cornerRadius(10.0)
                             } else { ProgressView() }
                         }

@@ -46,7 +46,7 @@ struct AlbumCard: View {
                         AsyncImage(url: URL(string: album.images[0].url)) { phase in
                             if let image = phase.image {
                                 image.resizable()
-                                    .aspectRatio(contentMode: .fill)
+                                    //.aspectRatio(contentMode: .fill)
                                     .blur(radius: 4.2)
                             } else { Color.clear }
                         }
