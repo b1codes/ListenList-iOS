@@ -29,10 +29,9 @@ struct ArtistCard: View {
     private var placeholderImage: some View {
         Image(systemName: "music.microphone")
             .resizable()
-            .scaledToFit()
-            .cornerRadius(15.0)
-            .frame(maxWidth: 90, maxHeight: 90)
-            .padding(.all)
+            .scaledToFill()
+            .frame(width: 90, height: 90)
+            .cornerRadius(10.0)
     }
     
     var body: some View {
@@ -41,78 +40,94 @@ struct ArtistCard: View {
         }
         
         return AnyView(
-            ZStack(alignment: .leading) { // Set alignment for the whole ZStack
-                // Layer 1: Background
-                ZStack {
-                    if !artist.images!.isEmpty {
-                        AsyncImage(url: URL(string: artist.images![0].url)) { phase in
-                            if let image = phase.image {
-                                image.resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .blur(radius: 4.2)
-                            } else { Color.clear }
-                        }
-                    }
-                    RoundedRectangle(cornerRadius: 15.0)
-                        .foregroundColor(.gray.opacity(0.7))
-                }
-                .frame(maxHeight: maxHeight)
-                .cornerRadius(15.0)
-                .clipped()
-
-                // Layer 2: Main Content
+            ZStack(alignment: .leading) {
+                // MARK: - Layer 1: Foreground Content
                 HStack(spacing: 15) {
-                    if artist.images!.isEmpty {
-                        placeholderImage
-                    } else {
-                        AsyncImage(url: URL(string: artist.images![0].url)) { phase in
+                    // Artist Image
+                    if let images = artist.images, !images.isEmpty {
+                        AsyncImage(url: URL(string: images[0].url)) { phase in
                             if let image = phase.image {
-                                image.resizable()
-                                    //.aspectRatio(contentMode: .fit)
-                                    .cornerRadius(10.0)
-                            } else { ProgressView() }
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } else {
+                                ProgressView().tint(.white)
+                            }
                         }
                         .frame(width: 90, height: 90)
+                        .cornerRadius(10.0)
+                    } else {
+                        placeholderImage
                     }
-                    
-                    VStack(alignment: .leading) {
-                        Text(artist.name).bold()
+
+                    // Artist Info
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(artist.name)
+                            .bold()
                             .lineLimit(2)
                     }
-                    
+
                     Spacer()
-                    
+
+                    // Add Button
                     if let onAdd = onAdd {
                         Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill").font(.title)
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title)
                         }
                     }
                 }
                 .padding(.leading, 35)
                 .padding(.trailing, 15)
 
-                // Layer 3: Rotated Text - THE FIX
+                // MARK: - Layer 2: Overlays
+                // Rotated "ARTIST" text
                 Text("ARTIST")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .fixedSize() // Allow the text to have its natural size
+                    .fixedSize()
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 20, height: maxHeight) // Give it a minimal frame and center it
+                    .frame(width: 20, height: maxHeight)
                     .padding(.leading, 8)
-                
-                // Layer 4: Edit Mode Overlay
+
+                // Edit mode overlay
                 if isInEditMode {
-                    Color.black.opacity(0.5).cornerRadius(15.0)
-                    if let onDelete = onDelete {
-                        Button(action: onDelete) {
-                            Image(systemName: "trash.circle.fill")
-                                .font(.largeTitle)
-                                .foregroundColor(.red)
+                    ZStack {
+                        Color.black.opacity(0.6)
+                        if let onDelete = onDelete {
+                            Button(action: onDelete) {
+                                Image(systemName: "trash.circle.fill")
+                                    .font(.largeTitle)
+                            }
                         }
                     }
                 }
             }
             .frame(maxWidth: 600, maxHeight: maxHeight)
+            .background(
+                ZStack {
+                    if let images = artist.images, !images.isEmpty, let imageUrl = images.first?.url, let url = URL(string: imageUrl) {
+                        AsyncImage(url: url) { phase in
+                            if let image = phase.image {
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } else {
+                                Color.gray
+                            }
+                        }
+                    } else {
+                        Color.gray
+                    }
+                    
+                    RoundedRectangle(cornerRadius: 15.0)
+                        .foregroundColor(.gray.opacity(0.7))
+                }
+                .blur(radius: 4.2)
+                .allowsHitTesting(false)
+            )
+            .cornerRadius(15.0)
+            .clipped()
             .padding([.leading, .trailing], 10)
         )
     }

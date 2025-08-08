@@ -102,8 +102,7 @@ struct SongCard: View {
                     .fixedSize()
                     .rotationEffect(.degrees(-90))
                     .frame(width: 20, height: maxHeight)
-                    .position(x: 15, y: maxHeight / 2)
-
+                    .padding(.leading, 8)
                 // Edit mode overlay
                 if isInEditMode {
                     ZStack {
