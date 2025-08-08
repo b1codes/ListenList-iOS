@@ -93,11 +93,13 @@ struct ArtistCard: View {
                 // Edit mode overlay
                 if isInEditMode {
                     ZStack {
-                        Color.black.opacity(0.6)
+                        Color.gray.opacity(0.6)
                         if let onDelete = onDelete {
                             Button(action: onDelete) {
                                 Image(systemName: "trash.circle.fill")
                                     .font(.largeTitle)
+                                    .foregroundColor(.red)
+
                             }
                         }
                     }
