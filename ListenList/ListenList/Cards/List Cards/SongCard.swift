@@ -35,95 +35,115 @@ struct SongCard: View {
         Image(systemName: "photo")
             .resizable()
             .scaledToFill()
-            .cornerRadius(15.0)
-            .frame(maxWidth: 90, maxHeight: 90)
-            .padding(.all)
+            .frame(width: 90, height: 90)
+            .cornerRadius(10.0)
     }
 
     var body: some View {
         guard let song = song else {
             return AnyView(EmptyView())
         }
-        
-        return AnyView(
-            ZStack(alignment: .leading) { // Set alignment for the whole ZStack
-                // Layer 1: Background
-                ZStack {
-                    if !song.album.images.isEmpty {
-                        AsyncImage(url: URL(string: song.album.images[0].url)) { phase in
-                            if let image = phase.image {
-                                image.resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .blur(radius: 4.2)
-                            } else { Color.clear }
-                        }
-                    }
-                    RoundedRectangle(cornerRadius: 15.0)
-                        .foregroundColor(.gray.opacity(0.7))
-                }
-                .frame(maxHeight: maxHeight)
-                .cornerRadius(15.0)
-                .clipped()
 
-                // Layer 2: Main Content
+        return AnyView(
+            ZStack(alignment: .leading) {
+                // MARK: - Layer 1: Foreground Content
                 HStack(spacing: 15) {
+                    // Album Art
                     if song.album.images.isEmpty {
                         placeholderImage
                     } else {
                         AsyncImage(url: URL(string: song.album.images[0].url)) { phase in
                             if let image = phase.image {
-                                image.resizable()
+                                image
+                                    .resizable()
                                     .aspectRatio(contentMode: .fit)
-                                    .cornerRadius(10.0)
-                            } else { ProgressView() }
+                            } else {
+                                ProgressView().tint(.white)
+                            }
                         }
                         .frame(width: 90, height: 90)
+                        .cornerRadius(10.0)
                     }
-                    
-                    VStack(alignment: .leading) {
-                        HStack{
-                            Text(song.name).bold()
+
+                    // Song Info
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack {
+                            Text(song.name)
+                                .bold()
                                 .lineLimit(2)
+
                             if song.explicit {
                                 Image(systemName: "e.square.fill")
                             }
                         }
-                        Text(artistsToStr()).lineLimit(1)
+                        Text(artistsToStr())
+                            .lineLimit(1)
+                            .opacity(0.8)
                     }
-                    
+
                     Spacer()
-                    
+
+                    // Add Button
                     if let onAdd = onAdd {
                         Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill").font(.title)
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title)
                         }
                     }
                 }
                 .padding(.leading, 35)
                 .padding(.trailing, 15)
 
-                // Layer 3: Rotated Text - THE FIX
+                // MARK: - Layer 2: Overlays
+                // Rotated "SONG" text
                 Text("SONG")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .fixedSize() // Allow the text to have its natural size
+                    .fixedSize()
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 20, height: maxHeight) // Give it a minimal frame and center it
-                    .padding(.leading, 8)
-                
-                // Layer 4: Edit Mode Overlay
+                    .frame(width: 20, height: maxHeight)
+                    .position(x: 15, y: maxHeight / 2)
+
+                // Edit mode overlay
                 if isInEditMode {
-                    Color.black.opacity(0.5).cornerRadius(15.0)
-                    if let onDelete = onDelete {
-                        Button(action: onDelete) {
-                            Image(systemName: "trash.circle.fill")
-                                .font(.largeTitle)
-                                .foregroundColor(.red)
+                    ZStack {
+                        Color.black.opacity(0.6)
+                        if let onDelete = onDelete {
+                            Button(action: onDelete) {
+                                Image(systemName: "trash.circle.fill")
+                                    .font(.largeTitle)
+                            }
                         }
                     }
                 }
             }
             .frame(maxWidth: 600, maxHeight: maxHeight)
+            .background(
+                ZStack {
+                    if let imageUrl = song.album.images.first?.url, let url = URL(string: imageUrl) {
+                        AsyncImage(url: url) { phase in
+                            if let image = phase.image {
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } else {
+                                Color.gray
+                            }
+                        }
+                    } else {
+                        Color.gray
+                    }
+                    
+                    // The RoundedRectangle is now layered on top of the image
+                    // within the background view.
+                    RoundedRectangle(cornerRadius: 15.0)
+                        .foregroundColor(.gray.opacity(0.7))
+                }
+                .blur(radius: 4.2)
+                .allowsHitTesting(false)
+            )
+            .cornerRadius(15.0)
+            .clipped()
             .padding([.leading, .trailing], 10)
         )
     }
