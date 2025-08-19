@@ -5,7 +5,7 @@ ListenList is an iOS application that allows you to curate your own music librar
 ## Features
 
   * **Search**: Find any song, album, or artist available on Spotify. The search functionality is categorized, allowing you to specify whether you are looking for a song, album, or artist.
-  * **Authorization**: Securely log in with your Spotify account to unlock the app's features. The app uses OAuth for authentication and securely stores your credentials using KeychainSwift.
+  * **Authorization**: Securely log in with your Spotify account to unlock the app's features. The app authenticates and securely stores your credentials using KeychainSwift.
   * **Personalized List**: Add your favorite music to a personal "ListenList" for easy access. Your personalized list is displayed on the home screen of the app.
   * **View Your List**: See all of your saved songs, albums, and artists in one place.
   * **Edit Your List**: Remove items from your ListenList at any time using the "Edit" mode.
