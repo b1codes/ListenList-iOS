@@ -141,3 +141,24 @@ struct AlbumCard: View {
         )
     }
 }
+
+#Preview {
+    AlbumCard(
+        input: Media(
+            input: .album(
+                Album(
+                    id: "1",
+                    images: [
+                        ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
+                    ],
+                    name: "Ordinary (Wedding Version)",
+                    release_date: "2021-01-01",
+                    artists: [
+                        Artist(id: "1", name: "Alex Warren", artistId: "1")
+                    ],
+                    album_type: "single"
+                )
+            )
+        )
+    )
+}

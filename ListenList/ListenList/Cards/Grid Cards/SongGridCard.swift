@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct SongCard: View {
+struct SongGridCard: View {
     var input: Media
     var song: Song?
     var onAdd: (() -> Void)?
@@ -24,8 +24,9 @@ struct SongCard: View {
         self.onDelete = onDelete
     }
 
-    let maxHeight: CGFloat = 120
-
+    let maxHeight: CGFloat = 270
+    let maxWidth: CGFloat = 185
+    
     private func artistsToStr() -> String {
         guard let artists = song?.artists, !artists.isEmpty else { return "Unknown Artist" }
         return artists.map { $0.name }.joined(separator: ", ")
@@ -35,7 +36,7 @@ struct SongCard: View {
         Image(systemName: "photo")
             .resizable()
             .scaledToFill()
-            .frame(width: 90, height: 90)
+            .frame(width: 180, height: 180)
             .cornerRadius(10.0)
     }
 
@@ -45,9 +46,16 @@ struct SongCard: View {
         }
 
         return AnyView(
-            ZStack(alignment: .leading) {
+            ZStack {
                 // MARK: - Layer 1: Foreground Content
-                HStack(spacing: 15) {
+                VStack(spacing: 4) {
+                    // "SONG" text
+                    Text("SONG")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .opacity(0.8)
+                        .padding(.top, 4) // Added small top padding to prevent touching the edge
+
                     // Album Art
                     if song.album.images.isEmpty {
                         placeholderImage
@@ -61,7 +69,7 @@ struct SongCard: View {
                                 ProgressView().tint(.white)
                             }
                         }
-                        .frame(width: 90, height: 90)
+                        .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
                     }
 
@@ -81,28 +89,19 @@ struct SongCard: View {
                             .opacity(0.8)
                     }
 
-                    Spacer()
-
                     // Add Button
                     if let onAdd = onAdd {
+                        Spacer()
                         Button(action: onAdd) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title)
                         }
                     }
                 }
-                .padding(.leading, 35)
-                .padding(.trailing, 15)
+                .padding(.horizontal, 15)
+                .padding(.bottom, 4) // Removed top padding from the VStack
 
                 // MARK: - Layer 2: Overlays
-                // Rotated "SONG" text
-                Text("SONG")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .fixedSize()
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: 20, height: maxHeight)
-                    .padding(.leading, 8)
                 // Edit mode overlay
                 if isInEditMode {
                     ZStack {
@@ -117,7 +116,7 @@ struct SongCard: View {
                     }
                 }
             }
-            .frame(maxWidth: 600, maxHeight: maxHeight)
+            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
                     if let imageUrl = song.album.images.first?.url, let url = URL(string: imageUrl) {
@@ -134,8 +133,6 @@ struct SongCard: View {
                         Color.gray
                     }
                     
-                    // The RoundedRectangle is now layered on top of the image
-                    // within the background view.
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }
@@ -150,7 +147,7 @@ struct SongCard: View {
 }
 
 #Preview {
-    SongCard(
+    SongGridCard(
         input: Media(
             input: .song(
                 Song(
@@ -173,7 +170,7 @@ struct SongCard: View {
                     duration_ms: 200000,
                     name: "Ordinary (Wedding Version)",
                     popularity: 100,
-                    explicit: false
+                    explicit: true
                 )
             )
         )

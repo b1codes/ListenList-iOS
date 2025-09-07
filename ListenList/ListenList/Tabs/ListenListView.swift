@@ -11,6 +11,7 @@ struct ListenListView: View {
     @State private var artists: [Artist] = []
     @State private var isLoading = true     // Track loading state
     @State private var isInEditMode = false // State for edit mode
+    @State private var isGridView = false   // State for view mode
 
     func createCard(from song: Song) -> Card {
         let media = Media(input: .song(song))
@@ -226,12 +227,23 @@ struct ListenListView: View {
                     } else if cards.isEmpty {
                         Text("No items found.")
                     } else {
-                        CardList(results: self.cards, isInEditMode: isInEditMode, onDelete: delete)
+                        if isGridView {
+                            CardGrid(results: self.cards, isInEditMode: isInEditMode, onDelete: delete)
+                        } else {
+                            CardList(results: self.cards, isInEditMode: isInEditMode, onDelete: delete)
+                        }
                     }
                 }
             }
             .navigationTitle("Your ListenList")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Picker("View Mode", selection: $isGridView) {
+                        Image(systemName: "list.bullet").tag(false)
+                        Image(systemName: "square.grid.2x2").tag(true)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(isInEditMode ? "Done" : "Edit") {
                         withAnimation {
