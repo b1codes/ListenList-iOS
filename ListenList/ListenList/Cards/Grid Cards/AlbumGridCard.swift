@@ -1,5 +1,13 @@
 //
-//  SongCard.swift
+//  AlbumGridCard.swift
+//  ListenList
+//
+//  Created by Brandon Lamer-Connolly on 9/7/25.
+//
+
+
+//
+//  AlbumGridCard.swift
 //  ListenList
 //
 //  Created by Brandon Lamer-Connolly on 10/12/24.
@@ -7,17 +15,17 @@
 
 import SwiftUI
 
-struct SongGridCard: View {
+struct AlbumGridCard: View {
     var input: Media
-    var song: Song?
+    var album: Album?
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
 
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
         self.input = input
-        if case let .song(song) = input.input {
-            self.song = song
+        if case let .album(album) = input.input {
+            self.album = album
         }
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
@@ -26,9 +34,8 @@ struct SongGridCard: View {
 
     let maxHeight: CGFloat = 270
     let maxWidth: CGFloat = 185
-    
     private func artistsToStr() -> String {
-        guard let artists = song?.artists, !artists.isEmpty else { return "Unknown Artist" }
+        guard let artists = album?.artists, !artists.isEmpty else { return "Unknown Artist" }
         return artists.map { $0.name }.joined(separator: ", ")
     }
 
@@ -36,12 +43,12 @@ struct SongGridCard: View {
         Image(systemName: "photo")
             .resizable()
             .scaledToFill()
-            .frame(width: 180, height: 180)
+            .frame(width: 90, height: 90)
             .cornerRadius(10.0)
     }
 
     var body: some View {
-        guard let song = song else {
+        guard let album = album else {
             return AnyView(EmptyView())
         }
 
@@ -49,18 +56,18 @@ struct SongGridCard: View {
             ZStack {
                 // MARK: - Layer 1: Foreground Content
                 VStack(spacing: 4) {
-                    // "SONG" text
-                    Text("SONG")
+                    // "ALBUM" text
+                    Text(album.album_type.uppercased())
                         .font(.caption)
                         .fontWeight(.bold)
                         .opacity(0.8)
-                        .padding(.top, 4) // Added small top padding to prevent touching the edge
+                        .padding(.top, 4)
 
                     // Album Art
-                    if song.album.images.isEmpty {
+                    if album.images.isEmpty {
                         placeholderImage
                     } else {
-                        AsyncImage(url: URL(string: song.album.images[0].url)) { phase in
+                        AsyncImage(url: URL(string: album.images[0].url)) { phase in
                             if let image = phase.image {
                                 image
                                     .resizable()
@@ -73,14 +80,14 @@ struct SongGridCard: View {
                         .cornerRadius(10.0)
                     }
 
-                    // Song Info
+                    // Album Info
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
-                            Text(song.name)
+                            Text(album.name)
                                 .bold()
                                 .lineLimit(2)
 
-                            if song.explicit {
+                            if album.isExplicit ?? false {
                                 Image(systemName: "e.square.fill")
                             }
                         }
@@ -99,7 +106,7 @@ struct SongGridCard: View {
                     }
                 }
                 .padding(.horizontal, 15)
-                .padding(.bottom, 4) // Removed top padding from the VStack
+                .padding(.bottom, 4)
 
                 // MARK: - Layer 2: Overlays
                 // Edit mode overlay
@@ -119,7 +126,7 @@ struct SongGridCard: View {
             .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let imageUrl = song.album.images.first?.url, let url = URL(string: imageUrl) {
+                    if let imageUrl = album.images.first?.url, let url = URL(string: imageUrl) {
                         AsyncImage(url: url) { phase in
                             if let image = phase.image {
                                 image
@@ -147,30 +154,20 @@ struct SongGridCard: View {
 }
 
 #Preview {
-    SongGridCard(
+    AlbumGridCard(
         input: Media(
-            input: .song(
-                Song(
+            input: .album(
+                Album(
                     id: "1",
-                    album: Album(
-                        id: "1",
-                        images: [
-                            ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
-                        ],
-                        name: "Ordinary (Wedding Version)",
-                        release_date: "2021-01-01",
-                        artists: [
-                            Artist(id: "1", name: "Alex Warren", artistId: "1")
-                        ],
-                        album_type: "single"
-                    ),
+                    images: [
+                        ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
+                    ],
+                    name: "Ordinary (Wedding Version)",
+                    release_date: "2021-01-01",
                     artists: [
                         Artist(id: "1", name: "Alex Warren", artistId: "1")
                     ],
-                    duration_ms: 200000,
-                    name: "Ordinary (Wedding Version)",
-                    popularity: 100,
-                    explicit: true
+                    album_type: "single"
                 )
             )
         )

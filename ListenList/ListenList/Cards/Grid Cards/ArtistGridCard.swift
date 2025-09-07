@@ -1,5 +1,13 @@
 //
-//  SongCard.swift
+//  ArtistGridCard.swift
+//  ListenList
+//
+//  Created by Brandon Lamer-Connolly on 9/7/25.
+//
+
+
+//
+//  ArtistGridCard.swift
 //  ListenList
 //
 //  Created by Brandon Lamer-Connolly on 10/12/24.
@@ -7,17 +15,17 @@
 
 import SwiftUI
 
-struct SongGridCard: View {
+struct ArtistGridCard: View {
     var input: Media
-    var song: Song?
+    var artist: Artist?
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
 
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
         self.input = input
-        if case let .song(song) = input.input {
-            self.song = song
+        if case let .artist(artist) = input.input {
+            self.artist = artist
         }
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
@@ -26,22 +34,17 @@ struct SongGridCard: View {
 
     let maxHeight: CGFloat = 270
     let maxWidth: CGFloat = 185
-    
-    private func artistsToStr() -> String {
-        guard let artists = song?.artists, !artists.isEmpty else { return "Unknown Artist" }
-        return artists.map { $0.name }.joined(separator: ", ")
-    }
 
     private var placeholderImage: some View {
-        Image(systemName: "photo")
+        Image(systemName: "music.microphone")
             .resizable()
             .scaledToFill()
-            .frame(width: 180, height: 180)
+            .frame(width: 90, height: 90)
             .cornerRadius(10.0)
     }
 
     var body: some View {
-        guard let song = song else {
+        guard let artist = artist else {
             return AnyView(EmptyView())
         }
 
@@ -49,18 +52,15 @@ struct SongGridCard: View {
             ZStack {
                 // MARK: - Layer 1: Foreground Content
                 VStack(spacing: 4) {
-                    // "SONG" text
-                    Text("SONG")
+                    // "ARTIST" text
+                    Text("ARTIST")
                         .font(.caption)
                         .fontWeight(.bold)
                         .opacity(0.8)
-                        .padding(.top, 4) // Added small top padding to prevent touching the edge
-
-                    // Album Art
-                    if song.album.images.isEmpty {
-                        placeholderImage
-                    } else {
-                        AsyncImage(url: URL(string: song.album.images[0].url)) { phase in
+                        .padding(.top, 8)
+                    // Artist Image
+                    if let images = artist.images, !images.isEmpty {
+                        AsyncImage(url: URL(string: images[0].url)) { phase in
                             if let image = phase.image {
                                 image
                                     .resizable()
@@ -71,23 +71,18 @@ struct SongGridCard: View {
                         }
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
+                    } else {
+                        placeholderImage
                     }
+                    Spacer()
 
-                    // Song Info
+                    // Artist Info
                     VStack(alignment: .leading, spacing: 5) {
-                        HStack {
-                            Text(song.name)
-                                .bold()
-                                .lineLimit(2)
-
-                            if song.explicit {
-                                Image(systemName: "e.square.fill")
-                            }
-                        }
-                        Text(artistsToStr())
-                            .lineLimit(1)
-                            .opacity(0.8)
+                        Text(artist.name)
+                            .bold()
+                            .lineLimit(2)
                     }
+                    Spacer()
 
                     // Add Button
                     if let onAdd = onAdd {
@@ -99,7 +94,7 @@ struct SongGridCard: View {
                     }
                 }
                 .padding(.horizontal, 15)
-                .padding(.bottom, 4) // Removed top padding from the VStack
+                .padding(.bottom, 4)
 
                 // MARK: - Layer 2: Overlays
                 // Edit mode overlay
@@ -119,7 +114,7 @@ struct SongGridCard: View {
             .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let imageUrl = song.album.images.first?.url, let url = URL(string: imageUrl) {
+                    if let images = artist.images, !images.isEmpty, let imageUrl = images.first?.url, let url = URL(string: imageUrl) {
                         AsyncImage(url: url) { phase in
                             if let image = phase.image {
                                 image
@@ -147,30 +142,16 @@ struct SongGridCard: View {
 }
 
 #Preview {
-    SongGridCard(
+    ArtistGridCard(
         input: Media(
-            input: .song(
-                Song(
+            input: .artist(
+                Artist(
                     id: "1",
-                    album: Album(
-                        id: "1",
-                        images: [
-                            ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
-                        ],
-                        name: "Ordinary (Wedding Version)",
-                        release_date: "2021-01-01",
-                        artists: [
-                            Artist(id: "1", name: "Alex Warren", artistId: "1")
-                        ],
-                        album_type: "single"
-                    ),
-                    artists: [
-                        Artist(id: "1", name: "Alex Warren", artistId: "1")
+                    images: [
+                        ImageResponse(url: "https://i.scdn.co/image/ab6761610000e5eb5f00bb6dd7a7008d14156630", height: 640, width: 640)
                     ],
-                    duration_ms: 200000,
-                    name: "Ordinary (Wedding Version)",
-                    popularity: 100,
-                    explicit: true
+                    name: "Kid Cudi",
+                    artistId: "1"
                 )
             )
         )
