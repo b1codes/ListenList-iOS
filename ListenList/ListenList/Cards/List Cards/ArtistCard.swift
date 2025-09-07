@@ -134,3 +134,20 @@ struct ArtistCard: View {
         )
     }
 }
+
+#Preview {
+    ArtistCard(
+        input: Media(
+            input: .artist(
+                Artist(
+                    id: "1",
+                    images: [
+                        ImageResponse(url: "https://i.scdn.co/image/ab6761610000e5eb5f00bb6dd7a7008d14156630", height: 640, width: 640)
+                    ],
+                    name: "Kid Cudi",
+                    artistId: "1"
+                )
+            )
+        )
+    )
+}

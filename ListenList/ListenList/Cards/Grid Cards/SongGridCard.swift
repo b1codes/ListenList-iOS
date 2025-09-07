@@ -24,7 +24,8 @@ struct SongGridCard: View {
         self.onDelete = onDelete
     }
 
-    let maxHeight: CGFloat = 120
+    let maxHeight: CGFloat = 225
+    let maxWidth: CGFloat = 150
 
     private func artistsToStr() -> String {
         guard let artists = song?.artists, !artists.isEmpty else { return "Unknown Artist" }
@@ -45,9 +46,16 @@ struct SongGridCard: View {
         }
 
         return AnyView(
-            ZStack(alignment: .leading) {
+            ZStack {
                 // MARK: - Layer 1: Foreground Content
-                HStack(spacing: 15) {
+                VStack(spacing: 4) {
+                    // "SONG" text
+                    Text("SONG")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .opacity(0.8)
+                        .padding(.top, 4) // Added small top padding to prevent touching the edge
+
                     // Album Art
                     if song.album.images.isEmpty {
                         placeholderImage
@@ -61,7 +69,7 @@ struct SongGridCard: View {
                                 ProgressView().tint(.white)
                             }
                         }
-                        .frame(width: 90, height: 90)
+                        .frame(width: 120, height: 120)
                         .cornerRadius(10.0)
                     }
 
@@ -81,28 +89,19 @@ struct SongGridCard: View {
                             .opacity(0.8)
                     }
 
-                    Spacer()
-
                     // Add Button
                     if let onAdd = onAdd {
+                        Spacer()
                         Button(action: onAdd) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title)
                         }
                     }
                 }
-                .padding(.leading, 35)
-                .padding(.trailing, 15)
+                .padding(.horizontal, 15)
+                .padding(.bottom, 4) // Removed top padding from the VStack
 
                 // MARK: - Layer 2: Overlays
-                // Rotated "SONG" text
-                Text("SONG")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .fixedSize()
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: 20, height: maxHeight)
-                    .padding(.leading, 8)
                 // Edit mode overlay
                 if isInEditMode {
                     ZStack {
@@ -117,7 +116,7 @@ struct SongGridCard: View {
                     }
                 }
             }
-            .frame(maxWidth: 600, maxHeight: maxHeight)
+            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
                     if let imageUrl = song.album.images.first?.url, let url = URL(string: imageUrl) {
@@ -134,8 +133,6 @@ struct SongGridCard: View {
                         Color.gray
                     }
                     
-                    // The RoundedRectangle is now layered on top of the image
-                    // within the background view.
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }
@@ -149,3 +146,33 @@ struct SongGridCard: View {
     }
 }
 
+#Preview {
+    SongGridCard(
+        input: Media(
+            input: .song(
+                Song(
+                    id: "1",
+                    album: Album(
+                        id: "1",
+                        images: [
+                            ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
+                        ],
+                        name: "Ordinary (Wedding Version)",
+                        release_date: "2021-01-01",
+                        artists: [
+                            Artist(id: "1", name: "Alex Warren", artistId: "1")
+                        ],
+                        album_type: "single"
+                    ),
+                    artists: [
+                        Artist(id: "1", name: "Alex Warren", artistId: "1")
+                    ],
+                    duration_ms: 200000,
+                    name: "Ordinary (Wedding Version)",
+                    popularity: 100,
+                    explicit: true
+                )
+            )
+        )
+    )
+}
