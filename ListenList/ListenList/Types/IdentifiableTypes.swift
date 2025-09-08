@@ -105,7 +105,7 @@ struct Audiobook: Identifiable, Hashable {
     var edition: String
     var narrators: [Narrator]
     var publisher: String
-    var total_chapters: Int
+    var total_chapters: Int?
 }
 
 struct Narrator: Hashable {

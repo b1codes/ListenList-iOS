@@ -83,12 +83,6 @@ struct AudiobookGridCard: View {
                         Text(authorsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
-                        Text("Narrated by: \(narratorsToStr())")
-                            .lineLimit(1)
-                            .opacity(0.8)
-                        Text(audiobook.publisher)
-                            .lineLimit(1)
-                            .opacity(0.8)
                     }
                     Spacer()
 

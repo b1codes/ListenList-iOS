@@ -271,7 +271,7 @@ class DatabaseManager {
             "edition": audiobook.edition,
             "narrators": audiobook.narrators.map { ["name": $0.name] },
             "publisher": audiobook.publisher,
-            "total_chapters": audiobook.total_chapters
+            "total_chapters": audiobook.total_chapters ?? 0 // Provide default value
         ]
         db.collection("audiobooks").document(audiobook.id).setData(audiobookData, completion: completion)
     }

@@ -88,6 +88,7 @@ struct SongCard: View {
                         Button(action: onAdd) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title)
+                                .foregroundColor(Color.black)
                         }
                     }
                 }

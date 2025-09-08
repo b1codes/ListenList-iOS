@@ -125,7 +125,7 @@ struct SearchView: View {
                 return audiobooks.items.map { audiobookResponse in
                     let authors = audiobookResponse.authors.map { Author(name: $0.name) }
                     let narrators = audiobookResponse.narrators.map { Narrator(name: $0.name) }
-                    let audiobook = Audiobook(id: audiobookResponse.id, name: audiobookResponse.name, authors: authors, images: audiobookResponse.images, explicit: audiobookResponse.explicit, description: audiobookResponse.description, edition: audiobookResponse.edition, narrators: narrators, publisher: audiobookResponse.publisher, total_chapters: audiobookResponse.total_chapters)
+                    let audiobook = Audiobook(id: audiobookResponse.id, name: audiobookResponse.name, authors: authors, images: audiobookResponse.images, explicit: audiobookResponse.explicit, description: audiobookResponse.description, edition: audiobookResponse.edition, narrators: narrators, publisher: audiobookResponse.publisher, total_chapters: audiobookResponse.total_chapters ?? 0) // Provide default value
                     return Card(input: .audiobook, media: Media(input: .audiobook(audiobook)), id: audiobook.id)
                 }
             }

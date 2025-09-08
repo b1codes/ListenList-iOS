@@ -76,12 +76,6 @@ struct AudiobookCard: View {
                         Text(authorsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
-                        Text("Narrated by: \(narratorsToStr())")
-                            .lineLimit(1)
-                            .opacity(0.8)
-                        Text(audiobook.publisher)
-                            .lineLimit(1)
-                            .opacity(0.8)
                     }
 
                     Spacer()
@@ -90,6 +84,8 @@ struct AudiobookCard: View {
                         Button(action: onAdd) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title)
+                                .foregroundColor(Color.black)
+
                         }
                     }
                 }

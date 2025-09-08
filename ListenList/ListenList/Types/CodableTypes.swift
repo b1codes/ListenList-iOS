@@ -132,7 +132,7 @@ struct AudiobookResponse: Codable, Hashable {
     var edition: String
     var narrators: [NarratorResponse]
     var publisher: String
-    var total_chapters: Int
+    var total_chapters: Int?
 }
 
 struct NarratorResponse: Codable, Hashable {
