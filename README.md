@@ -2,6 +2,10 @@
 
 ListenList is an iOS application that allows you to curate your own personal library of music and other audio content. You can search for your favorite songs, albums, artists, podcasts, and audiobooks and add them to a personalized "ListenList".
 
+## Demo
+
+You can see screen recordings and screenshots of the app [here](https://brandonlc2020.github.io/Portfolio/project/5).
+
 ## Features
 
   * **Comprehensive Search**: Find any song, album, artist, podcast, or audiobook available on Spotify. The search functionality is categorized, allowing you to specify what you are looking for.
