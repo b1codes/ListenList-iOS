@@ -72,6 +72,8 @@ struct SongGridCard: View {
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
                     }
+                    
+                    Spacer()
 
                     // Song Info
                     VStack(alignment: .leading, spacing: 5) {
@@ -88,7 +90,8 @@ struct SongGridCard: View {
                             .lineLimit(1)
                             .opacity(0.8)
                     }
-
+                    
+                    Spacer()
                     // Add Button
                     if let onAdd = onAdd {
                         Spacer()

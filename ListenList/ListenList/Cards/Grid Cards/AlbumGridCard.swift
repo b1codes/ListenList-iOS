@@ -79,7 +79,7 @@ struct AlbumGridCard: View {
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
                     }
-
+                    Spacer()
                     // Album Info
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
@@ -95,6 +95,7 @@ struct AlbumGridCard: View {
                             .lineLimit(1)
                             .opacity(0.8)
                     }
+                    Spacer()
 
                     // Add Button
                     if let onAdd = onAdd {
