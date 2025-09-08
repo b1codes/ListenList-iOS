@@ -84,3 +84,34 @@ extension Artist {
         self.artistId = dto.id
     }
 }
+
+struct Podcast: Identifiable, Hashable {
+    var id: String
+    var name: String
+    var publisher: String
+    var images: [ImageResponse]
+    var explicit: Bool
+    var description: String
+    var total_episodes: Int
+}
+
+struct Audiobook: Identifiable, Hashable {
+    var id: String
+    var name: String
+    var authors: [Author]
+    var images: [ImageResponse]
+    var explicit: Bool
+    var description: String
+    var edition: String
+    var narrators: [Narrator]
+    var publisher: String
+    var total_chapters: Int
+}
+
+struct Narrator: Hashable {
+    var name: String
+}
+
+struct Author: Hashable {
+    var name: String
+}

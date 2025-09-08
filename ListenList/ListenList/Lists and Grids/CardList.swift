@@ -27,6 +27,10 @@ struct CardList: View {
                     AlbumCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
                 case .artist:
                     ArtistCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                case .podcast:
+                    PodcastCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                case .audiobook:
+                    AudiobookCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
                 }
             }
         }

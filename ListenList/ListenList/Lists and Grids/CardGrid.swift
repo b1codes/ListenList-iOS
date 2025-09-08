@@ -1,9 +1,4 @@
-//
-//  CardGrid.swift
-//  ListenList
-//
-//  Created by Brandon Lamer-Connolly on 10/12/24.
-//
+// ListenList/ListenList/Lists and Grids/CardGrid.swift
 
 import SwiftUI
 
@@ -32,6 +27,10 @@ struct CardGrid: View {
                     AlbumGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
                 case .artist:
                     ArtistGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                case .podcast:
+                    PodcastGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                case .audiobook:
+                    AudiobookGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
                 }
             }
         }

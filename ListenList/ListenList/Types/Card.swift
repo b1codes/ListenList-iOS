@@ -26,4 +26,6 @@ enum CardType {
     case song
     case artist
     case album
+    case podcast
+    case audiobook
 }
