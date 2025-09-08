@@ -129,3 +129,23 @@ struct PodcastGridCard: View {
         )
     }
 }
+
+#Preview {
+    PodcastGridCard(
+        input: Media(
+            input: .podcast(
+                Podcast(
+                    id: "1",
+                    name: "The Daily",
+                    publisher: "The New York Times",
+                    images: [
+                        ImageResponse(url: "https://i.scdn.co/image/ab6765630000ba8a3f5a34a9b6c81eceaf92c536", height: 640, width: 640)
+                    ],
+                    explicit: false,
+                    description: "This is what the news should sound like. The biggest stories of our time, told by the best journalists in the world. Hosted by Michael Barbaro and Sabrina Tavernise. Twenty minutes a day, five days a week, ready by 6 a.m.",
+                    total_episodes: 1500
+                )
+            )
+        )
+    )
+}

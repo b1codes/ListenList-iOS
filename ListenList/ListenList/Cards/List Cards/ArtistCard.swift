@@ -1,9 +1,4 @@
-//
-//  ArtistCard.swift
-//  ListenList
-//
-//  Created by Brandon Lamer-Connolly on 10/12/24.
-//
+// ListenList/ListenList/Cards/List Cards/ArtistCard.swift
 
 import SwiftUI
 
@@ -13,10 +8,11 @@ struct ArtistCard: View {
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
+    var isSaved: Bool
 
     let maxHeight: CGFloat = 120
     
-    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
+    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .artist(artist) = input.input {
             self.artist = artist
@@ -24,6 +20,7 @@ struct ArtistCard: View {
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
         self.onDelete = onDelete
+        self.isSaved = isSaved
     }
     
     private var placeholderImage: some View {
@@ -71,11 +68,17 @@ struct ArtistCard: View {
 
                     // Add Button
                     if let onAdd = onAdd {
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
+                        if isSaved {
+                            Image(systemName: "checkmark.circle.fill")
                                 .font(.title)
-                                .foregroundColor(Color.black)
+                                .foregroundColor(.black)
+                        } else {
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(Color.black)
 
+                            }
                         }
                     }
                 }

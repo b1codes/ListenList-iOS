@@ -8,10 +8,11 @@ struct PodcastCard: View {
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
+    var isSaved: Bool
 
     let maxHeight: CGFloat = 120
     
-    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
+    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .podcast(podcast) = input.input {
             self.podcast = podcast
@@ -19,6 +20,7 @@ struct PodcastCard: View {
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
         self.onDelete = onDelete
+        self.isSaved = isSaved
     }
     
     private var placeholderImage: some View {
@@ -75,11 +77,17 @@ struct PodcastCard: View {
 
                     // Add Button
                     if let onAdd = onAdd {
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
+                        if isSaved {
+                            Image(systemName: "checkmark.circle.fill")
                                 .font(.title)
-                                .foregroundColor(Color.black)
+                                .foregroundColor(.black)
+                        } else {
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(Color.black)
 
+                            }
                         }
                     }
                 }
@@ -139,4 +147,24 @@ struct PodcastCard: View {
             .padding([.leading, .trailing], 10)
         )
     }
+}
+
+#Preview {
+    PodcastCard(
+        input: Media(
+            input: .podcast(
+                Podcast(
+                    id: "1",
+                    name: "The Daily",
+                    publisher: "The New York Times",
+                    images: [
+                        ImageResponse(url: "https://i.scdn.co/image/ab6765630000ba8a3f5a34a9b6c81eceaf92c536", height: 640, width: 640)
+                    ],
+                    explicit: false,
+                    description: "This is what the news should sound like. The biggest stories of our time, told by the best journalists in the world. Hosted by Michael Barbaro and Sabrina Tavernise. Twenty minutes a day, five days a week, ready by 6 a.m.",
+                    total_episodes: 1500
+                )
+            )
+        )
+    )
 }

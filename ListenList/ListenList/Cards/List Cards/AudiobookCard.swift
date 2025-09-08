@@ -8,10 +8,11 @@ struct AudiobookCard: View {
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
+    var isSaved: Bool
 
     let maxHeight: CGFloat = 120
     
-    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
+    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .audiobook(audiobook) = input.input {
             self.audiobook = audiobook
@@ -19,6 +20,7 @@ struct AudiobookCard: View {
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
         self.onDelete = onDelete
+        self.isSaved = isSaved
     }
     
     private func authorsToStr() -> String {
@@ -81,11 +83,17 @@ struct AudiobookCard: View {
                     Spacer()
 
                     if let onAdd = onAdd {
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
+                        if isSaved {
+                            Image(systemName: "checkmark.circle.fill")
                                 .font(.title)
-                                .foregroundColor(Color.black)
+                                .foregroundColor(.black)
+                        } else {
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(Color.black)
 
+                            }
                         }
                     }
                 }
@@ -142,4 +150,27 @@ struct AudiobookCard: View {
             .padding([.leading, .trailing], 10)
         )
     }
+}
+
+#Preview {
+    AudiobookCard(
+        input: Media(
+            input: .audiobook(
+                Audiobook(
+                    id: "1",
+                    name: "Dune",
+                    authors: [Author(name: "Frank Herbert")],
+                    images: [
+                        ImageResponse(url: "https://i.scdn.co/image/ab6766330000ec915d312896a29731633d671520", height: 640, width: 640)
+                    ],
+                    explicit: false,
+                    description: "The story of Paul Atreides, a young nobleman who is thrust into a galactic power struggle on the desert planet of Arrakis.",
+                    edition: "Unabridged",
+                    narrators: [Narrator(name: "Scott Brick")],
+                    publisher: "Macmillan Audio",
+                    total_chapters: 50
+                )
+            )
+        )
+    )
 }

@@ -40,6 +40,42 @@ class DatabaseManager {
         }
     }
     
+    func fetchDocumentIds(fromCollection collection: String, completion: @escaping (Set<String>, Error?) -> Void) {
+        db.collection(collection).getDocuments { snapshot, error in
+            if let error = error {
+                completion([], error)
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                completion([], nil)
+                return
+            }
+            
+            let ids = Set(documents.map { $0.documentID })
+            completion(ids, nil)
+        }
+    }
+    
+    func fetchArtistIdsInListenList(completion: @escaping (Set<String>, Error?) -> Void) {
+        db.collection("artists").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
+            if let error = error {
+                completion([], error)
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                completion([], nil)
+                return
+            }
+            
+            let ids = Set(documents.map { $0.documentID })
+            completion(ids, nil)
+        }
+    }
+
+
+    
     func fetchSong(withId songId: String, completion: @escaping (SongDTO?, Error?) -> Void) {
         let songRef = db.collection("songs").document(songId)
         songRef.getDocument { snapshot, error in

@@ -139,3 +139,26 @@ struct AudiobookGridCard: View {
         )
     }
 }
+
+#Preview {
+    AudiobookGridCard(
+        input: Media(
+            input: .audiobook(
+                Audiobook(
+                    id: "1",
+                    name: "Dune",
+                    authors: [Author(name: "Frank Herbert")],
+                    images: [
+                        ImageResponse(url: "https://i.scdn.co/image/ab6766330000ec915d312896a29731633d671520", height: 640, width: 640)
+                    ],
+                    explicit: false,
+                    description: "The story of Paul Atreides, a young nobleman who is thrust into a galactic power struggle on the desert planet of Arrakis.",
+                    edition: "Unabridged",
+                    narrators: [Narrator(name: "Scott Brick")],
+                    publisher: "Macmillan Audio",
+                    total_chapters: 50
+                )
+            )
+        )
+    )
+}

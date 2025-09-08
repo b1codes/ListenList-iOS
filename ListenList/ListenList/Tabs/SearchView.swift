@@ -1,6 +1,7 @@
 // ListenList/ListenList/Tabs/SearchView.swift
 
 import SwiftUI
+import FirebaseFirestore
 
 struct SearchView: View {
     var searchManager: SpotifyAPIManager
@@ -12,6 +13,7 @@ struct SearchView: View {
     @State private var isLoading = false
     @FocusState private var isTextFieldFocused: Bool
     @State private var currentSearchTask: Task<Void, Never>? = nil
+    @State private var listenListIDs = Set<String>()
 
     
     init(access: String, type: String) {
@@ -19,6 +21,38 @@ struct SearchView: View {
         self.tokenType = type
         self.searchManager = SpotifyAPIManager(access: access, token: type)
         self.cards = []
+    }
+
+    func fetchListenListIDs() {
+        let collections = ["songs", "albums", "podcasts", "audiobooks"]
+        var allIDs = Set<String>()
+        let group = DispatchGroup()
+
+        for collection in collections {
+            group.enter()
+            DatabaseManager.shared.fetchDocumentIds(fromCollection: collection) { ids, error in
+                if let error = error {
+                    print("Error fetching IDs from \(collection): \(error.localizedDescription)")
+                } else {
+                    allIDs.formUnion(ids)
+                }
+                group.leave()
+            }
+        }
+
+        group.enter()
+        DatabaseManager.shared.fetchArtistIdsInListenList { ids, error in
+            if let error = error {
+                print("Error fetching artist IDs from ListenList: \(error.localizedDescription)")
+            } else {
+                allIDs.formUnion(ids)
+            }
+            group.leave()
+        }
+
+        group.notify(queue: .main) {
+            self.listenListIDs = allIDs
+        }
     }
     
     @MainActor
@@ -170,6 +204,8 @@ struct SearchView: View {
                 DatabaseManager.shared.addSong(song: song) { error in
                     if let error = error {
                         print("Error adding song to database: \(error.localizedDescription)")
+                    } else {
+                        listenListIDs.insert(song.id)
                     }
                 }
             }
@@ -178,6 +214,8 @@ struct SearchView: View {
                 DatabaseManager.shared.addAlbum(album: album, showOnList: true) { error in
                     if let error = error {
                         print("Error adding album to database: \(error.localizedDescription)")
+                    } else {
+                        listenListIDs.insert(album.id)
                     }
                 }
             }
@@ -186,6 +224,8 @@ struct SearchView: View {
                 DatabaseManager.shared.addArtist(artist: artist, showOnList: true) { error in
                     if let error = error {
                         print("Error adding artist to database: \(error.localizedDescription)")
+                    } else {
+                        listenListIDs.insert(artist.id)
                     }
                 }
             }
@@ -194,6 +234,8 @@ struct SearchView: View {
                 DatabaseManager.shared.addPodcast(podcast: podcast) { error in
                     if let error = error {
                         print("Error adding podcast to database: \(error.localizedDescription)")
+                    } else {
+                        listenListIDs.insert(podcast.id)
                     }
                 }
             }
@@ -202,6 +244,8 @@ struct SearchView: View {
                 DatabaseManager.shared.addAudiobook(audiobook: audiobook) { error in
                     if let error = error {
                         print("Error adding audiobook to database: \(error.localizedDescription)")
+                    } else {
+                        listenListIDs.insert(audiobook.id)
                     }
                 }
             }
@@ -247,12 +291,13 @@ struct SearchView: View {
                         ProgressView("Searching...").padding()
                     }
                     
-                    CardList(results: cards, onAdd: onAdd)
+                    CardList(results: cards, onAdd: onAdd, listenListIDs: listenListIDs)
                 }
                 
             }
             .onTapGesture { isTextFieldFocused = false }
             .navigationTitle("Search")
+            .onAppear(perform: fetchListenListIDs)
         }
     }
 }
