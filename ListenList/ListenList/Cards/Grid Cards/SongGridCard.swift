@@ -173,7 +173,7 @@ struct SongGridCard: View {
                     duration_ms: 200000,
                     name: "Ordinary (Wedding Version)",
                     popularity: 100,
-                    explicit: true
+                    explicit: false
                 )
             )
         )
