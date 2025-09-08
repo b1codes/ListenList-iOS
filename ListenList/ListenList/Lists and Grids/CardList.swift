@@ -8,10 +8,12 @@ struct CardList: View {
     var onAdd: ((Card) -> Void)?
     var isInEditMode: Bool = false
     var onDelete: ((Card) -> Void)?
+    var listenListIDs: Set<String> = []
 
     var body: some View {
         LazyVGrid(columns: columns, alignment: .center, spacing: 10) {
             ForEach(results, id: \.id) { item in
+                let isSaved = listenListIDs.contains(item.id)
                 let addAction = onAdd.map { addFunc in
                     { addFunc(item) }
                 }
@@ -22,11 +24,15 @@ struct CardList: View {
 
                 switch item.type {
                 case .song:
-                    SongCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                    SongCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
                 case .album:
-                    AlbumCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                    AlbumCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
                 case .artist:
-                    ArtistCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                    ArtistCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                case .podcast:
+                    PodcastCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                case .audiobook:
+                    AudiobookCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
                 }
             }
         }

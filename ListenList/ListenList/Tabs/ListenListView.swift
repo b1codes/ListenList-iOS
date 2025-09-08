@@ -5,13 +5,15 @@ import FirebaseFirestore
 
 struct ListenListView: View {
     
-    @State private var cards: [Card] = [] // Holds the list of cards
-    @State private var songs: [Song] = []   // Use the SwiftUI-compatible Song type
+    @State private var cards: [Card] = []
+    @State private var songs: [Song] = []
     @State private var albums: [Album] = []
     @State private var artists: [Artist] = []
-    @State private var isLoading = true     // Track loading state
-    @State private var isInEditMode = false // State for edit mode
-    @State private var isGridView = false   // State for view mode
+    @State private var podcasts: [Podcast] = []
+    @State private var audiobooks: [Audiobook] = []
+    @State private var isLoading = true
+    @State private var isInEditMode = false
+    @State private var isGridView = false
 
     func createCard(from song: Song) -> Card {
         let media = Media(input: .song(song))
@@ -27,6 +29,16 @@ struct ListenListView: View {
         let media = Media(input: .artist(artist))
         return Card(input: .artist, media: media, id: artist.id)
     }
+
+    func createCard(from podcast: Podcast) -> Card {
+        let media = Media(input: .podcast(podcast))
+        return Card(input: .podcast, media: media, id: podcast.id)
+    }
+
+    func createCard(from audiobook: Audiobook) -> Card {
+        let media = Media(input: .audiobook(audiobook))
+        return Card(input: .audiobook, media: media, id: audiobook.id)
+    }
     
     func fetchListenList() {
         isLoading = true
@@ -35,6 +47,8 @@ struct ListenListView: View {
         var fetchedSongs: [Song] = []
         var fetchedAlbums: [Album] = []
         var fetchedArtists: [Artist] = []
+        var fetchedPodcasts: [Podcast] = []
+        var fetchedAudiobooks: [Audiobook] = []
         
         group.enter()
         fetchSongList { songs in
@@ -53,11 +67,25 @@ struct ListenListView: View {
             fetchedArtists = artists
             group.leave()
         }
+
+        group.enter()
+        fetchPodcastList { podcasts in
+            fetchedPodcasts = podcasts
+            group.leave()
+        }
+
+        group.enter()
+        fetchAudiobookList { audiobooks in
+            fetchedAudiobooks = audiobooks
+            group.leave()
+        }
         
         group.notify(queue: .main) {
             self.songs = fetchedSongs
             self.albums = fetchedAlbums
             self.artists = fetchedArtists
+            self.podcasts = fetchedPodcasts
+            self.audiobooks = fetchedAudiobooks
             updateUI()
         }
     }
@@ -73,7 +101,6 @@ struct ListenListView: View {
             }
             
             guard let documents = documents else {
-                print("No song documents found.")
                 completion([])
                 return
             }
@@ -94,7 +121,6 @@ struct ListenListView: View {
                     }
                     
                     guard let songDTO = songDTO else {
-                        print("No songDTO found for ID \(songId).")
                         return
                     }
                     
@@ -102,8 +128,6 @@ struct ListenListView: View {
                     SongDTO.toSong(from: songDTO) { song in
                         if let song = song {
                             fetchedSongs.append(song)
-                        } else {
-                            print("Failed to convert songDTO to Song for ID \(songId).")
                         }
                         group.leave()
                     }
@@ -180,13 +204,77 @@ struct ListenListView: View {
         }
     }
 
+    func fetchPodcastList(completion: @escaping ([Podcast]) -> Void) {
+        DatabaseManager.shared.db.collection("podcasts").getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching podcasts: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+
+            guard let documents = snapshot?.documents else {
+                completion([])
+                return
+            }
+
+            let podcasts = documents.compactMap { doc -> Podcast? in
+                let data = doc.data()
+                let id = doc.documentID
+                let name = data["name"] as? String ?? ""
+                let publisher = data["publisher"] as? String ?? ""
+                let imagesData = data["images"] as? [[String: Any]] ?? []
+                let images = imagesData.compactMap { ImageDTO.toImageResponse(from: $0) }
+                let explicit = data["explicit"] as? Bool ?? false
+                let description = data["description"] as? String ?? ""
+                let total_episodes = data["total_episodes"] as? Int ?? 0
+                return Podcast(id: id, name: name, publisher: publisher, images: images, explicit: explicit, description: description, total_episodes: total_episodes)
+            }
+            completion(podcasts)
+        }
+    }
+
+    func fetchAudiobookList(completion: @escaping ([Audiobook]) -> Void) {
+        DatabaseManager.shared.db.collection("audiobooks").getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching audiobooks: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+
+            guard let documents = snapshot?.documents else {
+                completion([])
+                return
+            }
+
+            let audiobooks = documents.compactMap { doc -> Audiobook? in
+                let data = doc.data()
+                let id = doc.documentID
+                let name = data["name"] as? String ?? ""
+                let authorsData = data["authors"] as? [[String: Any]] ?? []
+                let authors = authorsData.compactMap { Author(name: $0["name"] as? String ?? "") }
+                let imagesData = data["images"] as? [[String: Any]] ?? []
+                let images = imagesData.compactMap { ImageDTO.toImageResponse(from: $0) }
+                let explicit = data["explicit"] as? Bool ?? false
+                let description = data["description"] as? String ?? ""
+                let edition = data["edition"] as? String ?? ""
+                let narratorsData = data["narrators"] as? [[String: Any]] ?? []
+                let narrators = narratorsData.compactMap { Narrator(name: $0["name"] as? String ?? "") }
+                let publisher = data["publisher"] as? String ?? ""
+                let total_chapters = data["total_chapters"] as? Int ?? 0
+                return Audiobook(id: id, name: name, authors: authors, images: images, explicit: explicit, description: description, edition: edition, narrators: narrators, publisher: publisher, total_chapters: total_chapters)
+            }
+            completion(audiobooks)
+        }
+    }
+
     private func updateUI() {
         let songCards = self.songs.map { createCard(from: $0) }
         let albumCards = self.albums.map { createCard(from: $0) }
         let artistCards = self.artists.map { createCard(from: $0) }
-        self.cards = songCards + albumCards + artistCards
+        let podcastCards = self.podcasts.map { createCard(from: $0) }
+        let audiobookCards = self.audiobooks.map { createCard(from: $0) }
+        self.cards = songCards + albumCards + artistCards + podcastCards + audiobookCards
         self.isLoading = false
-        print("Successfully loaded \(self.songs.count) songs, \(self.albums.count) albums, and \(self.artists.count) artists.")
     }
 
     private func delete(card: Card) {
@@ -211,6 +299,22 @@ struct ListenListView: View {
             DatabaseManager.shared.updateArtistShowOnList(withId: card.id, showOnList: false) { error in
                 if let error = error {
                     print("Error updating artist: \(error.localizedDescription)")
+                } else {
+                    fetchListenList()
+                }
+            }
+        case .podcast:
+            DatabaseManager.shared.deletePodcast(withId: card.id) { error in
+                if let error = error {
+                    print("Error deleting podcast: \(error.localizedDescription)")
+                } else {
+                    fetchListenList()
+                }
+            }
+        case .audiobook:
+            DatabaseManager.shared.deleteAudiobook(withId: card.id) { error in
+                if let error = error {
+                    print("Error deleting audiobook: \(error.localizedDescription)")
                 } else {
                     fetchListenList()
                 }

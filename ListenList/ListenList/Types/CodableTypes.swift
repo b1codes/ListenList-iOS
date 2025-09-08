@@ -25,12 +25,6 @@ struct ArtistSearchResponse: Codable, Hashable {
     var items: [ArtistResponse]
 }
 
-struct SearchResponse: Codable, Hashable {
-    var albums: AlbumSearchResponse?
-    var tracks: SongSearchResponse?
-    var artists: ArtistSearchResponse?
-}
-
 struct AlbumSearchResponse: Codable, Hashable {
     var href: String
     var limit: Int
@@ -96,4 +90,63 @@ struct AlbumTracksResponse: Codable, Hashable {
 
 struct TrackItem: Codable, Hashable {
     var explicit: Bool
+}
+
+struct ShowSearchResponse: Codable, Hashable {
+    var href: String
+    var limit: Int
+    var next: String?
+    var offset: Int
+    var previous: String?
+    var total: Int
+    var items: [ShowResponse]
+}
+
+struct AudiobookSearchResponse: Codable, Hashable {
+    var href: String
+    var limit: Int
+    var next: String?
+    var offset: Int
+    var previous: String?
+    var total: Int
+    var items: [AudiobookResponse]
+}
+
+struct ShowResponse: Codable, Hashable {
+    var id: String
+    var name: String
+    var publisher: String
+    var images: [ImageResponse]
+    var explicit: Bool
+    var description: String
+    var total_episodes: Int
+}
+
+struct AudiobookResponse: Codable, Hashable {
+    var id: String
+    var name: String
+    var authors: [AuthorResponse]
+    var images: [ImageResponse]
+    var explicit: Bool
+    var description: String
+    var edition: String
+    var narrators: [NarratorResponse]
+    var publisher: String
+    var total_chapters: Int?
+}
+
+struct NarratorResponse: Codable, Hashable {
+    var name: String
+}
+
+struct AuthorResponse: Codable, Hashable {
+    var name: String
+}
+
+struct SearchResponse: Codable, Hashable {
+    var albums: AlbumSearchResponse?
+    var tracks: SongSearchResponse?
+    var artists: ArtistSearchResponse?
+    var shows: ShowSearchResponse?
+    var audiobooks: AudiobookSearchResponse?
 }

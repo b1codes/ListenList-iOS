@@ -1,42 +1,29 @@
-//
-//  ArtistGridCard.swift
-//  ListenList
-//
-//  Created by Brandon Lamer-Connolly on 9/7/25.
-//
-
-
-//
-//  ArtistGridCard.swift
-//  ListenList
-//
-//  Created by Brandon Lamer-Connolly on 10/12/24.
-//
+// ListenList/ListenList/Cards/Grid Cards/PodcastGridCard.swift
 
 import SwiftUI
 
-struct ArtistGridCard: View {
+struct PodcastGridCard: View {
     var input: Media
-    var artist: Artist?
+    var podcast: Podcast?
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
 
+    let maxHeight: CGFloat = 270
+    let maxWidth: CGFloat = 185
+
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
         self.input = input
-        if case let .artist(artist) = input.input {
-            self.artist = artist
+        if case let .podcast(podcast) = input.input {
+            self.podcast = podcast
         }
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
         self.onDelete = onDelete
     }
 
-    let maxHeight: CGFloat = 270
-    let maxWidth: CGFloat = 185
-
     private var placeholderImage: some View {
-        Image(systemName: "music.microphone")
+        Image(systemName: "mic.fill")
             .resizable()
             .scaledToFill()
             .frame(width: 90, height: 90)
@@ -44,23 +31,23 @@ struct ArtistGridCard: View {
     }
 
     var body: some View {
-        guard let artist = artist else {
+        guard let podcast = podcast else {
             return AnyView(EmptyView())
         }
 
         return AnyView(
             ZStack {
-                // MARK: - Layer 1: Foreground Content
                 VStack(spacing: 4) {
-                    // "ARTIST" text
-                    Text("ARTIST")
+                    Text("PODCAST")
                         .font(.caption)
                         .fontWeight(.bold)
                         .opacity(0.8)
-                        .padding(.top, 8)
-                    // Artist Image
-                    if let images = artist.images, !images.isEmpty {
-                        AsyncImage(url: URL(string: images[0].url)) { phase in
+                        .padding(.top, 4)
+
+                    if podcast.images.isEmpty {
+                        placeholderImage
+                    } else {
+                        AsyncImage(url: URL(string: podcast.images[0].url)) { phase in
                             if let image = phase.image {
                                 image
                                     .resizable()
@@ -71,20 +58,24 @@ struct ArtistGridCard: View {
                         }
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
-                    } else {
-                        placeholderImage
                     }
                     Spacer()
-
-                    // Artist Info
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(artist.name)
-                            .bold()
-                            .lineLimit(2)
+                        HStack {
+                            Text(podcast.name)
+                                .bold()
+                                .lineLimit(2)
+
+                            if podcast.explicit {
+                                Image(systemName: "e.square.fill")
+                            }
+                        }
+                        Text(podcast.publisher)
+                            .lineLimit(1)
+                            .opacity(0.8)
                     }
                     Spacer()
 
-                    // Add Button
                     if let onAdd = onAdd {
                         Spacer()
                         Button(action: onAdd) {
@@ -95,9 +86,7 @@ struct ArtistGridCard: View {
                 }
                 .padding(.horizontal, 15)
                 .padding(.bottom, 4)
-
-                // MARK: - Layer 2: Overlays
-                // Edit mode overlay
+                
                 if isInEditMode {
                     ZStack {
                         Color.gray.opacity(0.6)
@@ -114,7 +103,7 @@ struct ArtistGridCard: View {
             .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let images = artist.images, !images.isEmpty, let imageUrl = images.first?.url, let url = URL(string: imageUrl) {
+                    if let imageUrl = podcast.images.first?.url, let url = URL(string: imageUrl) {
                         AsyncImage(url: url) { phase in
                             if let image = phase.image {
                                 image
@@ -142,33 +131,19 @@ struct ArtistGridCard: View {
 }
 
 #Preview {
-    ArtistGridCard(
+    PodcastGridCard(
         input: Media(
-            input: .artist(
-                Artist(
+            input: .podcast(
+                Podcast(
                     id: "1",
+                    name: "The Daily",
+                    publisher: "The New York Times",
                     images: [
-                        ImageResponse(url: "https://i.scdn.co/image/ab6761610000e5eb5f00bb6dd7a7008d14156630", height: 640, width: 640)
+                        ImageResponse(url: "https://i.scdn.co/image/ab6765630000ba8a3f5a34a9b6c81eceaf92c536", height: 640, width: 640)
                     ],
-                    name: "Kid Cudi",
-                    artistId: "1"
-                )
-            )
-        )
-    )
-}
-
-#Preview {
-    ArtistGridCard(
-        input: Media(
-            input: .artist(
-                Artist(
-                    id: "1",
-                    images: [
-                        ImageResponse(url: "https://i.scdn.co/image/ab6761610000e5eb5f00bb6dd7a7008d14156630", height: 640, width: 640)
-                    ],
-                    name: "Kid Cudi",
-                    artistId: "1"
+                    explicit: false,
+                    description: "This is what the news should sound like. The biggest stories of our time, told by the best journalists in the world. Hosted by Michael Barbaro and Sabrina Tavernise. Twenty minutes a day, five days a week, ready by 6 a.m.",
+                    total_episodes: 1500
                 )
             )
         )

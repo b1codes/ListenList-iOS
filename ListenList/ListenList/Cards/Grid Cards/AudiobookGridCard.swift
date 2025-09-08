@@ -1,31 +1,18 @@
-//
-//  ArtistGridCard.swift
-//  ListenList
-//
-//  Created by Brandon Lamer-Connolly on 9/7/25.
-//
-
-
-//
-//  ArtistGridCard.swift
-//  ListenList
-//
-//  Created by Brandon Lamer-Connolly on 10/12/24.
-//
+// ListenList/ListenList/Cards/Grid Cards/AudiobookGridCard.swift
 
 import SwiftUI
 
-struct ArtistGridCard: View {
+struct AudiobookGridCard: View {
     var input: Media
-    var artist: Artist?
+    var audiobook: Audiobook?
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
 
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
         self.input = input
-        if case let .artist(artist) = input.input {
-            self.artist = artist
+        if case let .audiobook(audiobook) = input.input {
+            self.audiobook = audiobook
         }
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
@@ -35,8 +22,18 @@ struct ArtistGridCard: View {
     let maxHeight: CGFloat = 270
     let maxWidth: CGFloat = 185
 
+    private func authorsToStr() -> String {
+        guard let authors = audiobook?.authors, !authors.isEmpty else { return "Unknown Author" }
+        return authors.map { $0.name }.joined(separator: ", ")
+    }
+    
+    private func narratorsToStr() -> String {
+        guard let narrators = audiobook?.narrators, !narrators.isEmpty else { return "Unknown Narrator" }
+        return narrators.map { $0.name }.joined(separator: ", ")
+    }
+
     private var placeholderImage: some View {
-        Image(systemName: "music.microphone")
+        Image(systemName: "book.fill")
             .resizable()
             .scaledToFill()
             .frame(width: 90, height: 90)
@@ -44,23 +41,23 @@ struct ArtistGridCard: View {
     }
 
     var body: some View {
-        guard let artist = artist else {
+        guard let audiobook = audiobook else {
             return AnyView(EmptyView())
         }
 
         return AnyView(
             ZStack {
-                // MARK: - Layer 1: Foreground Content
                 VStack(spacing: 4) {
-                    // "ARTIST" text
-                    Text("ARTIST")
+                    Text("AUDIOBOOK")
                         .font(.caption)
                         .fontWeight(.bold)
                         .opacity(0.8)
-                        .padding(.top, 8)
-                    // Artist Image
-                    if let images = artist.images, !images.isEmpty {
-                        AsyncImage(url: URL(string: images[0].url)) { phase in
+                        .padding(.top, 4)
+
+                    if audiobook.images.isEmpty {
+                        placeholderImage
+                    } else {
+                        AsyncImage(url: URL(string: audiobook.images[0].url)) { phase in
                             if let image = phase.image {
                                 image
                                     .resizable()
@@ -71,20 +68,24 @@ struct ArtistGridCard: View {
                         }
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
-                    } else {
-                        placeholderImage
                     }
                     Spacer()
-
-                    // Artist Info
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(artist.name)
-                            .bold()
-                            .lineLimit(2)
+                        HStack {
+                            Text(audiobook.name)
+                                .bold()
+                                .lineLimit(2)
+
+                            if audiobook.explicit {
+                                Image(systemName: "e.square.fill")
+                            }
+                        }
+                        Text(authorsToStr())
+                            .lineLimit(1)
+                            .opacity(0.8)
                     }
                     Spacer()
 
-                    // Add Button
                     if let onAdd = onAdd {
                         Spacer()
                         Button(action: onAdd) {
@@ -96,8 +97,6 @@ struct ArtistGridCard: View {
                 .padding(.horizontal, 15)
                 .padding(.bottom, 4)
 
-                // MARK: - Layer 2: Overlays
-                // Edit mode overlay
                 if isInEditMode {
                     ZStack {
                         Color.gray.opacity(0.6)
@@ -114,7 +113,7 @@ struct ArtistGridCard: View {
             .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let images = artist.images, !images.isEmpty, let imageUrl = images.first?.url, let url = URL(string: imageUrl) {
+                    if let imageUrl = audiobook.images.first?.url, let url = URL(string: imageUrl) {
                         AsyncImage(url: url) { phase in
                             if let image = phase.image {
                                 image
@@ -142,33 +141,22 @@ struct ArtistGridCard: View {
 }
 
 #Preview {
-    ArtistGridCard(
+    AudiobookGridCard(
         input: Media(
-            input: .artist(
-                Artist(
+            input: .audiobook(
+                Audiobook(
                     id: "1",
+                    name: "Dune",
+                    authors: [Author(name: "Frank Herbert")],
                     images: [
-                        ImageResponse(url: "https://i.scdn.co/image/ab6761610000e5eb5f00bb6dd7a7008d14156630", height: 640, width: 640)
+                        ImageResponse(url: "https://i.scdn.co/image/ab6766330000ec915d312896a29731633d671520", height: 640, width: 640)
                     ],
-                    name: "Kid Cudi",
-                    artistId: "1"
-                )
-            )
-        )
-    )
-}
-
-#Preview {
-    ArtistGridCard(
-        input: Media(
-            input: .artist(
-                Artist(
-                    id: "1",
-                    images: [
-                        ImageResponse(url: "https://i.scdn.co/image/ab6761610000e5eb5f00bb6dd7a7008d14156630", height: 640, width: 640)
-                    ],
-                    name: "Kid Cudi",
-                    artistId: "1"
+                    explicit: false,
+                    description: "The story of Paul Atreides, a young nobleman who is thrust into a galactic power struggle on the desert planet of Arrakis.",
+                    edition: "Unabridged",
+                    narrators: [Narrator(name: "Scott Brick")],
+                    publisher: "Macmillan Audio",
+                    total_chapters: 50
                 )
             )
         )

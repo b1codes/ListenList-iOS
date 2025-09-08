@@ -40,6 +40,42 @@ class DatabaseManager {
         }
     }
     
+    func fetchDocumentIds(fromCollection collection: String, completion: @escaping (Set<String>, Error?) -> Void) {
+        db.collection(collection).getDocuments { snapshot, error in
+            if let error = error {
+                completion([], error)
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                completion([], nil)
+                return
+            }
+            
+            let ids = Set(documents.map { $0.documentID })
+            completion(ids, nil)
+        }
+    }
+    
+    func fetchArtistIdsInListenList(completion: @escaping (Set<String>, Error?) -> Void) {
+        db.collection("artists").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
+            if let error = error {
+                completion([], error)
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                completion([], nil)
+                return
+            }
+            
+            let ids = Set(documents.map { $0.documentID })
+            completion(ids, nil)
+        }
+    }
+
+
+    
     func fetchSong(withId songId: String, completion: @escaping (SongDTO?, Error?) -> Void) {
         let songRef = db.collection("songs").document(songId)
         songRef.getDocument { snapshot, error in
@@ -249,6 +285,34 @@ class DatabaseManager {
         db.collection("albums").document(album.id).setData(albumData, merge: true, completion: completion)
     }
     
+    func addPodcast(podcast: Podcast, completion: @escaping (Error?) -> Void) {
+        let podcastData: [String: Any] = [
+            "name": podcast.name,
+            "publisher": podcast.publisher,
+            "images": podcast.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
+            "explicit": podcast.explicit,
+            "description": podcast.description,
+            "total_episodes": podcast.total_episodes
+        ]
+        db.collection("podcasts").document(podcast.id).setData(podcastData, completion: completion)
+    }
+
+    func addAudiobook(audiobook: Audiobook, completion: @escaping (Error?) -> Void) {
+        let audiobookData: [String: Any] = [
+            "name": audiobook.name,
+            "authors": audiobook.authors.map { ["name": $0.name] },
+            "images": audiobook.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
+            "explicit": audiobook.explicit,
+            "description": audiobook.description,
+            "edition": audiobook.edition,
+            "narrators": audiobook.narrators.map { ["name": $0.name] },
+            "publisher": audiobook.publisher,
+            "total_chapters": audiobook.total_chapters ?? 0 // Provide default value
+        ]
+        db.collection("audiobooks").document(audiobook.id).setData(audiobookData, completion: completion)
+    }
+
+    
     func updateArtistShowOnList(withId artistId: String, showOnList: Bool, completion: @escaping (Error?) -> Void) {
         db.collection("artists").document(artistId).updateData([
             "showOnList": showOnList
@@ -279,4 +343,13 @@ class DatabaseManager {
     func deleteArtist(withId artistId: String, completion: @escaping (Error?) -> Void) {
         db.collection("artists").document(artistId).delete(completion: completion)
     }
+    
+    func deletePodcast(withId podcastId: String, completion: @escaping (Error?) -> Void) {
+        db.collection("podcasts").document(podcastId).delete(completion: completion)
+    }
+
+    func deleteAudiobook(withId audiobookId: String, completion: @escaping (Error?) -> Void) {
+        db.collection("audiobooks").document(audiobookId).delete(completion: completion)
+    }
+
 }

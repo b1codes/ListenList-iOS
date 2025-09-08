@@ -16,8 +16,12 @@ struct Media {
 }
 
 // Enum to represent different media types
+// ListenList/ListenList/Types/Media.swift
+
 enum MediaType {
     case song(Song)
     case artist(Artist)
     case album(Album)
+    case podcast(Podcast)
+    case audiobook(Audiobook)
 }

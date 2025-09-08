@@ -1,3 +1,5 @@
+// ListenList/ListenList/Cards/List Cards/AlbumCard.swift
+
 import SwiftUI
 
 struct AlbumCard: View {
@@ -6,10 +8,11 @@ struct AlbumCard: View {
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
+    var isSaved: Bool
 
     let maxHeight: CGFloat = 120
     
-    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
+    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .album(album) = input.input {
             self.album = album
@@ -17,6 +20,7 @@ struct AlbumCard: View {
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
         self.onDelete = onDelete
+        self.isSaved = isSaved
     }
     
     private func artistsToStr() -> String {
@@ -78,9 +82,17 @@ struct AlbumCard: View {
 
                     // Add Button
                     if let onAdd = onAdd {
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
+                        if isSaved {
+                            Image(systemName: "checkmark.circle.fill")
                                 .font(.title)
+                                .foregroundColor(.black)
+                        } else {
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(Color.black)
+
+                            }
                         }
                     }
                 }

@@ -1,9 +1,4 @@
-//
-//  SongCard.swift
-//  ListenList
-//
-//  Created by Brandon Lamer-Connolly on 10/12/24.
-//
+// ListenList/ListenList/Cards/List Cards/SongCard.swift
 
 import SwiftUI
 
@@ -13,8 +8,9 @@ struct SongCard: View {
     var onAdd: (() -> Void)?
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
+    var isSaved: Bool
 
-    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
+    init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .song(song) = input.input {
             self.song = song
@@ -22,6 +18,7 @@ struct SongCard: View {
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
         self.onDelete = onDelete
+        self.isSaved = isSaved
     }
 
     let maxHeight: CGFloat = 120
@@ -85,9 +82,16 @@ struct SongCard: View {
 
                     // Add Button
                     if let onAdd = onAdd {
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
+                        if isSaved {
+                            Image(systemName: "checkmark.circle.fill")
                                 .font(.title)
+                                .foregroundColor(.black)
+                        } else {
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(Color.black)
+                            }
                         }
                     }
                 }

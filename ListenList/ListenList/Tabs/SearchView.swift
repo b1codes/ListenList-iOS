@@ -1,6 +1,7 @@
 // ListenList/ListenList/Tabs/SearchView.swift
 
 import SwiftUI
+import FirebaseFirestore
 
 struct SearchView: View {
     var searchManager: SpotifyAPIManager
@@ -10,8 +11,9 @@ struct SearchView: View {
     @State private var searchBy = 0
     @State private var searchText: String = ""
     @State private var isLoading = false
-    @FocusState private var isTextFieldFocused: Bool // Focus management for TextField
+    @FocusState private var isTextFieldFocused: Bool
     @State private var currentSearchTask: Task<Void, Never>? = nil
+    @State private var listenListIDs = Set<String>()
 
     
     init(access: String, type: String) {
@@ -19,6 +21,38 @@ struct SearchView: View {
         self.tokenType = type
         self.searchManager = SpotifyAPIManager(access: access, token: type)
         self.cards = []
+    }
+
+    func fetchListenListIDs() {
+        let collections = ["songs", "albums", "podcasts", "audiobooks"]
+        var allIDs = Set<String>()
+        let group = DispatchGroup()
+
+        for collection in collections {
+            group.enter()
+            DatabaseManager.shared.fetchDocumentIds(fromCollection: collection) { ids, error in
+                if let error = error {
+                    print("Error fetching IDs from \(collection): \(error.localizedDescription)")
+                } else {
+                    allIDs.formUnion(ids)
+                }
+                group.leave()
+            }
+        }
+
+        group.enter()
+        DatabaseManager.shared.fetchArtistIdsInListenList { ids, error in
+            if let error = error {
+                print("Error fetching artist IDs from ListenList: \(error.localizedDescription)")
+            } else {
+                allIDs.formUnion(ids)
+            }
+            group.leave()
+        }
+
+        group.notify(queue: .main) {
+            self.listenListIDs = allIDs
+        }
     }
     
     @MainActor
@@ -29,7 +63,9 @@ struct SearchView: View {
         switch self.searchBy {
             case 0: return await searchAlbums()
             case 1: return await searchArtists()
-            default: return await searchSongs()
+            case 2: return await searchSongs()
+            case 3: return await searchPodcasts()
+            default: return await searchAudiobooks()
         }
     }
 
@@ -96,16 +132,47 @@ struct SearchView: View {
                 }
             }
         } catch {
-            print("Error during song search: \(error)")
+            print("Error during artist search: \(error)")
         }
         return []
     }
-    
+
+    func searchPodcasts() async -> [Card] {
+        do {
+            if let showSearchResults = try await searchManager.search(query: searchText, type: "show"),
+               let shows = showSearchResults.shows {
+                return shows.items.map { show in
+                    let podcast = Podcast(id: show.id, name: show.name, publisher: show.publisher, images: show.images, explicit: show.explicit, description: show.description, total_episodes: show.total_episodes)
+                    return Card(input: .podcast, media: Media(input: .podcast(podcast)), id: podcast.id)
+                }
+            }
+        } catch {
+            print("Error during podcast search: \(error)")
+        }
+        return []
+    }
+
+    func searchAudiobooks() async -> [Card] {
+        do {
+            if let audiobookSearchResults = try await searchManager.search(query: searchText, type: "audiobook"),
+               let audiobooks = audiobookSearchResults.audiobooks {
+                return audiobooks.items.map { audiobookResponse in
+                    let authors = audiobookResponse.authors.map { Author(name: $0.name) }
+                    let narrators = audiobookResponse.narrators.map { Narrator(name: $0.name) }
+                    let audiobook = Audiobook(id: audiobookResponse.id, name: audiobookResponse.name, authors: authors, images: audiobookResponse.images, explicit: audiobookResponse.explicit, description: audiobookResponse.description, edition: audiobookResponse.edition, narrators: narrators, publisher: audiobookResponse.publisher, total_chapters: audiobookResponse.total_chapters ?? 0) // Provide default value
+                    return Card(input: .audiobook, media: Media(input: .audiobook(audiobook)), id: audiobook.id)
+                }
+            }
+        } catch {
+            print("Error during audiobook search: \(error)")
+        }
+        return []
+    }
+
     @MainActor
     func startSearch() async {
         guard !self.searchText.isEmpty else { return }
         
-        // Cancel any ongoing search
         currentSearchTask?.cancel()
         
         let thisQuery = self.searchText
@@ -113,26 +180,21 @@ struct SearchView: View {
         self.cards = []
         self.isTextFieldFocused = false
         
-        // Create a new task for the search
         currentSearchTask = Task {
             let results: [Card] = await performSearch()
             
-            // Check if the search text hasn’t changed in the meantime
             if self.searchText == thisQuery {
                 self.cards = results
             }
             self.isLoading = false
-            print("done searching!")
         }
     }
 
-
     func resetSearch() {
-        // Reset all states explicitly
         searchText = ""
         cards = []
         isLoading = false
-        isTextFieldFocused = false // Clear keyboard focus
+        isTextFieldFocused = false
     }
     
     func onAdd(card: Card) {
@@ -143,7 +205,7 @@ struct SearchView: View {
                     if let error = error {
                         print("Error adding song to database: \(error.localizedDescription)")
                     } else {
-                        print("Song added to database successfully!")
+                        listenListIDs.insert(song.id)
                     }
                 }
             }
@@ -153,7 +215,7 @@ struct SearchView: View {
                     if let error = error {
                         print("Error adding album to database: \(error.localizedDescription)")
                     } else {
-                        print("Album added successfully!")
+                        listenListIDs.insert(album.id)
                     }
                 }
             }
@@ -163,7 +225,27 @@ struct SearchView: View {
                     if let error = error {
                         print("Error adding artist to database: \(error.localizedDescription)")
                     } else {
-                        print("Artist added successfully!")
+                        listenListIDs.insert(artist.id)
+                    }
+                }
+            }
+        case .podcast:
+            if case let .podcast(podcast) = card.input.input {
+                DatabaseManager.shared.addPodcast(podcast: podcast) { error in
+                    if let error = error {
+                        print("Error adding podcast to database: \(error.localizedDescription)")
+                    } else {
+                        listenListIDs.insert(podcast.id)
+                    }
+                }
+            }
+        case .audiobook:
+            if case let .audiobook(audiobook) = card.input.input {
+                DatabaseManager.shared.addAudiobook(audiobook: audiobook) { error in
+                    if let error = error {
+                        print("Error adding audiobook to database: \(error.localizedDescription)")
+                    } else {
+                        listenListIDs.insert(audiobook.id)
                     }
                 }
             }
@@ -178,17 +260,15 @@ struct SearchView: View {
                         Text("Album").tag(0)
                         Text("Artist").tag(1)
                         Text("Song").tag(2)
+                        Text("Podcast").tag(3)
+                        Text("Audiobook").tag(4)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding()
-
                     
                     HStack {
                         TextField("Search...", text: $searchText)
                             .focused($isTextFieldFocused)
-                            .onChange(of: searchText) {
-                                print("Search text changed to: \(searchText)")
-                            }
                             .onSubmit {
                                 Task { await startSearch() }
                             }
@@ -211,15 +291,13 @@ struct SearchView: View {
                         ProgressView("Searching...").padding()
                     }
                     
-                    CardList(results: cards, onAdd: onAdd)
+                    CardList(results: cards, onAdd: onAdd, listenListIDs: listenListIDs)
                 }
                 
             }
             .onTapGesture { isTextFieldFocused = false }
             .navigationTitle("Search")
+            .onAppear(perform: fetchListenListIDs)
         }
     }
-
-
-
 }
