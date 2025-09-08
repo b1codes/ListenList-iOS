@@ -28,7 +28,6 @@ struct TabUIView: View {
                     }
             }
         }
-        .accentColor(.black)
         .navigationBarBackButtonHidden(true)
     }
 }
