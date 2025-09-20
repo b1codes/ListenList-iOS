@@ -346,7 +346,10 @@ struct ListenListView: View {
                         Image(systemName: "list.bullet").tag(false)
                         Image(systemName: "square.grid.2x2").tag(true)
                     }
-                    .pickerStyle(SegmentedPickerStyle())
+                    .pickerStyle(.palette)
+                    .background(.clear)
+                    .fixedSize()
+                    
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(isInEditMode ? "Done" : "Edit") {
@@ -362,3 +365,4 @@ struct ListenListView: View {
         }
     }
 }
+
