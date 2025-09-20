@@ -14,6 +14,8 @@ struct ListenListView: View {
     @State private var isLoading = true
     @State private var isInEditMode = false
     @State private var isGridView = false
+    
+    @Namespace private var namespace
 
     func createCard(from song: Song) -> Card {
         let media = Media(input: .song(song))
@@ -342,14 +344,44 @@ struct ListenListView: View {
             .navigationTitle("Your ListenList")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Picker("View Mode", selection: $isGridView) {
-                        Image(systemName: "list.bullet").tag(false)
-                        Image(systemName: "square.grid.2x2").tag(true)
+                    // This HStack has NO background of its own.
+                    HStack(spacing: 10) {
+                        Image(systemName: "list.bullet")
+                            .font(.body.weight(.semibold))
+                            // Use the app's Accent Color for the selected item for high contrast.
+                            .foregroundColor(isGridView ? .secondary : .accentColor)
+                            .frame(width: 36, height: 36)
+                            .background {
+                                if !isGridView {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        // Use a more prominent material for the "bubble".
+                                        .fill(.regularMaterial)
+                                        .matchedGeometryEffect(id: "selection-bubble", in: namespace)
+                                }
+                            }
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                                    isGridView = false
+                                }
+                            }
+
+                        Image(systemName: "square.grid.2x2")
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(isGridView ? .accentColor : .secondary)
+                            .frame(width: 36, height: 36)
+                            .background {
+                                if isGridView {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(.regularMaterial)
+                                        .matchedGeometryEffect(id: "selection-bubble", in: namespace)
+                                }
+                            }
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                                    isGridView = true
+                                }
+                            }
                     }
-                    .pickerStyle(.palette)
-                    .background(.clear)
-                    .fixedSize()
-                    
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(isInEditMode ? "Done" : "Edit") {
