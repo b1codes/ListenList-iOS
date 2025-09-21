@@ -14,6 +14,9 @@ struct SearchView: View {
     @FocusState private var isTextFieldFocused: Bool
     @State private var currentSearchTask: Task<Void, Never>? = nil
     @State private var listenListIDs = Set<String>()
+    @State private var showCancelButton = false
+    
+    private let searchFieldAnimation = Animation.easeInOut(duration: 0.35)
 
     
     init(access: String, type: String) {
@@ -195,6 +198,7 @@ struct SearchView: View {
         cards = []
         isLoading = false
         isTextFieldFocused = false
+        showCancelButton = false
     }
     
     func onAdd(card: Card) {
@@ -266,24 +270,59 @@ struct SearchView: View {
                     .pickerStyle(SegmentedPickerStyle())
                     .padding()
                     
-                    HStack {
-                        TextField("Search...", text: $searchText)
-                            .focused($isTextFieldFocused)
-                            .onSubmit {
-                                Task { await startSearch() }
+                    if #available(iOS 26.0, *) {
+                        GlassEffectContainer(spacing: 16) {
+                            HStack {
+                                TextField("Search...", text: $searchText)
+                                    .focused($isTextFieldFocused)
+                                    .onSubmit {
+                                        Task { await startSearch() }
+                                    }
+                                    .padding(7)
+                                    .padding(.horizontal, 25)
+                                    .glassEffect(.regular.tint(Color(.systemGray4)).interactive(), in: .rect(cornerRadius: 16))
+                                    .padding(.horizontal, 10)
+                                
+                                if showCancelButton {
+                                    Button("Cancel") {
+                                        resetSearch()
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(7)
+                                    .glassEffect(.regular.tint(.red).interactive(), in: .rect(cornerRadius: 16))
+                                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                                }
                             }
-                            .padding(7)
-                            .padding(.horizontal, 25)
-                            .background(Color(.systemGray4))
-                            .cornerRadius(8)
                             .padding(.horizontal, 10)
-                        
-                        if !searchText.isEmpty {
-                            Button("Cancel") {
-                                resetSearch()
+                            .animation(searchFieldAnimation, value: searchText.isEmpty)
+                            .onChange(of: searchText) {
+                                // This closure now captures the `searchText` state directly.
+                                if searchText.isEmpty {
+                                    showCancelButton = false
+                                } else {
+                                    // We still manage the cancel button's appearance.
+                                    showCancelButton = true
+                                }
                             }
-                            .foregroundColor(.blue)
-                            .padding(.trailing, 10)
+                        }
+                    } else {
+                        HStack {
+                            TextField("Search...", text: $searchText)
+                                .focused($isTextFieldFocused)
+                                .onSubmit {
+                                    Task { await startSearch() }
+                                }
+                                .padding(7)
+                                .padding(.horizontal, 25)
+                                .padding(.horizontal, 10)
+                            
+                            if !searchText.isEmpty {
+                                Button("Cancel") {
+                                    resetSearch()
+                                }
+                                .foregroundColor(.blue)
+                                .padding(.trailing, 10)
+                            }
                         }
                     }
                     
@@ -301,3 +340,4 @@ struct SearchView: View {
         }
     }
 }
+
