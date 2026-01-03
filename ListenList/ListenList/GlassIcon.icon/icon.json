@@ -9,9 +9,32 @@
     {
       "layers" : [
         {
-          "image-name" : "Icon 2.png",
-          "name" : "Icon",
-          "opacity" : 0.8
+          "image-name" : "ListenList Icon Foreground.png",
+          "name" : "ListenList Icon Foreground",
+          "position" : {
+            "scale" : 0.9,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "hidden" : false,
+          "image-name" : "ListenList Icon Background.png",
+          "name" : "ListenList Icon Background"
         }
       ],
       "shadow" : {
