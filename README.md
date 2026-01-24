@@ -21,6 +21,43 @@ You can see screen recordings and screenshots of the app [here](https://brandonl
   * **Spotify Web API**: All music and audio data is fetched from the extensive Spotify library.
   * **Swift Package Manager**: For managing project dependencies.
 
+## Architecture
+
+```mermaid
+graph TD
+    subgraph "User"
+        U[User]
+    end
+
+    subgraph "ListenList App"
+        UI[SwiftUI Views]
+        Managers
+    end
+
+    subgraph "Managers"
+        direction LR
+        Auth[AuthManager]
+        API[SpotifyAPIManager]
+        DB[DatabaseManager]
+    end
+
+    subgraph "External Services"
+        Spotify[Spotify Web API]
+        Firebase[Firebase Firestore]
+        Keychain[KeychainSwift]
+    end
+
+    U -- Interacts with --> UI
+    UI -- Calls --> Auth
+    UI -- Calls --> API
+    UI -- Calls --> DB
+
+    Auth -- Authenticates via --> Spotify
+    Auth -- Stores token in --> Keychain
+    API -- Fetches data from --> Spotify
+    DB -- Persists data to --> Firebase
+```
+
 ## Dependencies
 
 This project uses the following Swift packages:
