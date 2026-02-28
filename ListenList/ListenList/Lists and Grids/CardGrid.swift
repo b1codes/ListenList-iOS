@@ -20,20 +20,42 @@ struct CardGrid: View {
                     { deleteFunc(item) }
                 }
 
-                switch item.type {
-                case .song:
-                    SongGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
-                case .album:
-                    AlbumGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
-                case .artist:
-                    ArtistGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
-                case .podcast:
-                    PodcastGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
-                case .audiobook:
-                    AudiobookGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                NavigationLink {
+                    destinationView(for: item)
+                } label: {
+                    switch item.type {
+                    case .song:
+                        SongGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                    case .album:
+                        AlbumGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                    case .artist:
+                        ArtistGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                    case .podcast:
+                        PodcastGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                    case .audiobook:
+                        AudiobookGridCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction)
+                    }
                 }
+                .disabled(isInEditMode)
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .id(results.count)
+    }
+
+    @ViewBuilder
+    private func destinationView(for item: Card) -> some View {
+        switch item.input.input {
+        case .song(let song):
+            SongDetailView(song: song)
+        case .album(let album):
+            AlbumDetailView(album: album)
+        case .artist(let artist):
+            ArtistDetailView(artist: artist)
+        case .podcast(let podcast):
+            PodcastDetailView(podcast: podcast)
+        case .audiobook(let audiobook):
+            AudiobookDetailView(audiobook: audiobook)
+        }
     }
 }

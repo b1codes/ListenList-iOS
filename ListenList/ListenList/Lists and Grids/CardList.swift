@@ -22,20 +22,42 @@ struct CardList: View {
                     { deleteFunc(item) }
                 }
 
-                switch item.type {
-                case .song:
-                    SongCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
-                case .album:
-                    AlbumCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
-                case .artist:
-                    ArtistCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
-                case .podcast:
-                    PodcastCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
-                case .audiobook:
-                    AudiobookCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                NavigationLink {
+                    destinationView(for: item)
+                } label: {
+                    switch item.type {
+                    case .song:
+                        SongCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                    case .album:
+                        AlbumCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                    case .artist:
+                        ArtistCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                    case .podcast:
+                        PodcastCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                    case .audiobook:
+                        AudiobookCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                    }
                 }
+                .disabled(isInEditMode)
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .id(results.count)
+    }
+
+    @ViewBuilder
+    private func destinationView(for item: Card) -> some View {
+        switch item.input.input {
+        case .song(let song):
+            SongDetailView(song: song)
+        case .album(let album):
+            AlbumDetailView(album: album)
+        case .artist(let artist):
+            ArtistDetailView(artist: artist)
+        case .podcast(let podcast):
+            PodcastDetailView(podcast: podcast)
+        case .audiobook(let audiobook):
+            AudiobookDetailView(audiobook: audiobook)
+        }
     }
 }

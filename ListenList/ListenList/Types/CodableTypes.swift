@@ -51,6 +51,7 @@ struct ArtistResponse: Codable, Hashable {
     var name: String
     var popularity: Int?
     var id: String
+    var genres: [String]?
 }
 
 struct AlbumResponse: Codable, Hashable {
@@ -60,6 +61,8 @@ struct AlbumResponse: Codable, Hashable {
     var artists: [ArtistResponse]?
     var album_type: String
     var id: String
+    var genres: [String]?
+    var label: String?
 }
 
 struct ImageResponse: Codable, Hashable {
@@ -90,6 +93,7 @@ struct AlbumTracksResponse: Codable, Hashable {
 
 struct TrackItem: Codable, Hashable {
     var explicit: Bool
+    var name: String?
 }
 
 struct ShowSearchResponse: Codable, Hashable {

@@ -24,6 +24,7 @@ struct Artist: Identifiable, Hashable {
     var popularity: Int?
     var artistId: String
     var showOnList: Bool? // Add this new property
+    var genres: [String]?
 }
 
 struct Album: Identifiable, Hashable {
@@ -34,6 +35,8 @@ struct Album: Identifiable, Hashable {
     var artists: [Artist]
     var album_type: String
     var isExplicit: Bool? = false
+    var genres: [String]?
+    var label: String?
 }
 
 extension Album {
@@ -62,7 +65,7 @@ extension Album {
         self.isExplicit = dto.isExplicit
     }
     
-    init(id: String, images: [ImageResponse], name: String, release_date: String, artists: [Artist], album_type: String, isExplicit: Bool) {
+    init(id: String, images: [ImageResponse], name: String, release_date: String, artists: [Artist], album_type: String, isExplicit: Bool, genres: [String]? = nil, label: String? = nil) {
         self.id = id
         self.images = images
         self.name = name
@@ -70,6 +73,8 @@ extension Album {
         self.artists = artists
         self.album_type = album_type
         self.isExplicit = isExplicit
+        self.genres = genres
+        self.label = label
     }
 
 }

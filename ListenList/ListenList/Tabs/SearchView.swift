@@ -94,7 +94,9 @@ struct SearchView: View {
                         release_date: albumResponse.release_date,
                         artists: artists,
                         album_type: albumResponse.album_type,
-                        isExplicit: isExplicit
+                        isExplicit: isExplicit,
+                        genres: albumResponse.genres,
+                        label: albumResponse.label
                     )
                     albumCards.append(Card(input: .album, media: Media(input: .album(album)), id: album.id))
                 }
@@ -130,7 +132,7 @@ struct SearchView: View {
                let artists = artistSearchResults.artists {
                     
                     return artists.items.map { artist in
-                        return Card(input: .artist, media: Media(input: .artist(Artist(id: artist.id, images: artist.images, name: artist.name, popularity: artist.popularity, artistId: artist.id))), id: artist.id)
+                        return Card(input: .artist, media: Media(input: .artist(Artist(id: artist.id, images: artist.images, name: artist.name, popularity: artist.popularity, artistId: artist.id, genres: artist.genres))), id: artist.id)
                     
                 }
             }
