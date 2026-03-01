@@ -78,6 +78,16 @@ struct AudiobookCard: View {
                         Text(authorsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
+                        
+                        if let rating = audiobook.rating, audiobook.isCompleted ?? false {
+                            HStack(spacing: 2) {
+                                ForEach(1...5, id: \.self) { index in
+                                    Image(systemName: index <= rating ? "star.fill" : "star")
+                                        .font(.caption2)
+                                        .foregroundColor(index <= rating ? .yellow : .gray)
+                                }
+                            }
+                        }
                     }
 
                     Spacer()

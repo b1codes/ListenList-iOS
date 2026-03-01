@@ -6,6 +6,7 @@ import FirebaseFirestore
 @MainActor
 class ListManager: ObservableObject {
     @Published var cards: [Card] = []
+    @Published var completedCards: [Card] = []
     @Published var isLoading = false
     
     private var songs: [Song] = []
@@ -201,7 +202,10 @@ class ListManager: ObservableObject {
                     let explicit = data["explicit"] as? Bool ?? false
                     let description = data["description"] as? String ?? ""
                     let total_episodes = data["total_episodes"] as? Int ?? 0
-                    return Podcast(id: id, name: name, publisher: publisher, images: images, explicit: explicit, description: description, total_episodes: total_episodes)
+                    let rating = data["rating"] as? Int
+                    let comment = data["comment"] as? String
+                    let isCompleted = data["isCompleted"] as? Bool ?? false
+                    return Podcast(id: id, name: name, publisher: publisher, images: images, explicit: explicit, description: description, total_episodes: total_episodes, rating: rating, comment: comment, isCompleted: isCompleted)
                 }
                 continuation.resume(returning: podcasts)
             }
@@ -237,7 +241,10 @@ class ListManager: ObservableObject {
                     let narrators = narratorsData.compactMap { Narrator(name: $0["name"] as? String ?? "") }
                     let publisher = data["publisher"] as? String ?? ""
                     let total_chapters = data["total_chapters"] as? Int ?? 0
-                    return Audiobook(id: id, name: name, authors: authors, images: images, explicit: explicit, description: description, edition: edition, narrators: narrators, publisher: publisher, total_chapters: total_chapters)
+                    let rating = data["rating"] as? Int
+                    let comment = data["comment"] as? String
+                    let isCompleted = data["isCompleted"] as? Bool ?? false
+                    return Audiobook(id: id, name: name, authors: authors, images: images, explicit: explicit, description: description, edition: edition, narrators: narrators, publisher: publisher, total_chapters: total_chapters, rating: rating, comment: comment, isCompleted: isCompleted)
                 }
                 continuation.resume(returning: audiobooks)
             }
@@ -245,12 +252,19 @@ class ListManager: ObservableObject {
     }
 
     private func updateUI() {
-        let songCards = self.songs.map { createCard(from: $0) }
-        let albumCards = self.albums.map { createCard(from: $0) }
-        let artistCards = self.artists.map { createCard(from: $0) }
-        let podcastCards = self.podcasts.map { createCard(from: $0) }
-        let audiobookCards = self.audiobooks.map { createCard(from: $0) }
+        let songCards = self.songs.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
+        let albumCards = self.albums.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
+        let artistCards = self.artists.map { createCard(from: $0) } // Artists don't have isCompleted for now
+        let podcastCards = self.podcasts.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
+        let audiobookCards = self.audiobooks.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
         self.cards = songCards + albumCards + artistCards + podcastCards + audiobookCards
+        
+        let completedSongCards = self.songs.filter { $0.isCompleted ?? false }.map { createCard(from: $0) }
+        let completedAlbumCards = self.albums.filter { $0.isCompleted ?? false }.map { createCard(from: $0) }
+        let completedPodcastCards = self.podcasts.filter { $0.isCompleted ?? false }.map { createCard(from: $0) }
+        let completedAudiobookCards = self.audiobooks.filter { $0.isCompleted ?? false }.map { createCard(from: $0) }
+        self.completedCards = completedSongCards + completedAlbumCards + completedPodcastCards + completedAudiobookCards
+        
         self.isLoading = false
     }
     

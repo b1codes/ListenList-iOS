@@ -384,4 +384,38 @@ class DatabaseManager {
         db.collection("audiobooks").document(audiobookId).delete(completion: completion)
     }
 
+    // MARK: - Log as Completed Functions
+
+    func logSongAsCompleted(withId songId: String, rating: Int, comment: String, completion: @escaping (Error?) -> Void) {
+        db.collection("songs").document(songId).updateData([
+            "isCompleted": true,
+            "rating": rating,
+            "comment": comment
+        ], completion: completion)
+    }
+
+    func logAlbumAsCompleted(withId albumId: String, rating: Int, comment: String, completion: @escaping (Error?) -> Void) {
+        db.collection("albums").document(albumId).updateData([
+            "isCompleted": true,
+            "rating": rating,
+            "comment": comment
+        ], completion: completion)
+    }
+
+    func logPodcastAsCompleted(withId podcastId: String, rating: Int, comment: String, completion: @escaping (Error?) -> Void) {
+        db.collection("podcasts").document(podcastId).updateData([
+            "isCompleted": true,
+            "rating": rating,
+            "comment": comment
+        ], completion: completion)
+    }
+
+    func logAudiobookAsCompleted(withId audiobookId: String, rating: Int, comment: String, completion: @escaping (Error?) -> Void) {
+        db.collection("audiobooks").document(audiobookId).updateData([
+            "isCompleted": true,
+            "rating": rating,
+            "comment": comment
+        ], completion: completion)
+    }
+
 }

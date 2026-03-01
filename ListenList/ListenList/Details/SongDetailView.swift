@@ -5,6 +5,10 @@ import SwiftUI
 struct SongDetailView: View {
     var song: Song
     
+    @State private var rating = 0
+    @State private var comment = ""
+    @State private var isAlreadyCompleted = false
+    
     private func artistsToStr() -> String {
         return song.artists.map { $0.name }.joined(separator: ", ")
     }
@@ -82,11 +86,63 @@ struct SongDetailView: View {
                     }
                 }
                 
+                Divider()
+                
+                // Log as Completed Section
+                VStack(alignment: .leading, spacing: 15) {
+                    Text("Log as Completed")
+                        .font(.headline)
+                    
+                    HStack {
+                        Text("Rating:")
+                        RatingView(rating: $rating)
+                    }
+                    
+                    TextField("Optional Comment", text: $comment)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    Button(action: logAsCompleted) {
+                        Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
+                            .bold()
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .padding(.top, 10)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(15)
+                .padding(.horizontal)
+                
                 Spacer()
             }
             .padding(.top, 20)
         }
         .navigationTitle("Song Details")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if let songRating = song.rating {
+                self.rating = songRating
+                self.isAlreadyCompleted = true
+            }
+            if let songComment = song.comment {
+                self.comment = songComment
+            }
+        }
+    }
+    
+    private func logAsCompleted() {
+        DatabaseManager.shared.logSongAsCompleted(withId: song.id, rating: rating, comment: comment) { error in
+            if let error = error {
+                print("Error logging song as completed: \(error.localizedDescription)")
+            } else {
+                Task { @MainActor in
+                    await ListManager.shared.fetchListenList(forceReload: true)
+                }
+            }
+        }
     }
 }

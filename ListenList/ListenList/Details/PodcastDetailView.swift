@@ -5,6 +5,10 @@ import SwiftUI
 struct PodcastDetailView: View {
     var podcast: Podcast
     
+    @State private var rating = 0
+    @State private var comment = ""
+    @State private var isAlreadyCompleted = false
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -51,6 +55,37 @@ struct PodcastDetailView: View {
                 
                 Divider()
                 
+                // Log as Completed Section
+                VStack(alignment: .leading, spacing: 15) {
+                    Text("Log as Completed")
+                        .font(.headline)
+                    
+                    HStack {
+                        Text("Rating:")
+                        RatingView(rating: $rating)
+                    }
+                    
+                    TextField("Optional Comment", text: $comment)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    Button(action: logAsCompleted) {
+                        Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
+                            .bold()
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .padding(.top, 10)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(15)
+                .padding(.horizontal)
+                
+                Divider()
+                
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Description")
                         .font(.title2)
@@ -66,5 +101,26 @@ struct PodcastDetailView: View {
         }
         .navigationTitle("Podcast Details")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if let podcastRating = podcast.rating {
+                self.rating = podcastRating
+                self.isAlreadyCompleted = true
+            }
+            if let podcastComment = podcast.comment {
+                self.comment = podcastComment
+            }
+        }
+    }
+    
+    private func logAsCompleted() {
+        DatabaseManager.shared.logPodcastAsCompleted(withId: podcast.id, rating: rating, comment: comment) { error in
+            if let error = error {
+                print("Error logging podcast as completed: \(error.localizedDescription)")
+            } else {
+                Task { @MainActor in
+                    await ListManager.shared.fetchListenList(forceReload: true)
+                }
+            }
+        }
     }
 }

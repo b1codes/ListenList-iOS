@@ -8,6 +8,10 @@ struct AlbumDetailView: View {
     @State private var tracks: [TrackItem] = []
     @State private var isLoading = true
     
+    @State private var rating = 0
+    @State private var comment = ""
+    @State private var isAlreadyCompleted = false
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -70,6 +74,37 @@ struct AlbumDetailView: View {
                 
                 Divider()
                 
+                // Log as Completed Section
+                VStack(alignment: .leading, spacing: 15) {
+                    Text("Log as Completed")
+                        .font(.headline)
+                    
+                    HStack {
+                        Text("Rating:")
+                        RatingView(rating: $rating)
+                    }
+                    
+                    TextField("Optional Comment", text: $comment)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    Button(action: logAsCompleted) {
+                        Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
+                            .bold()
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .padding(.top, 10)
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(15)
+                .padding(.horizontal)
+                
+                Divider()
+                
                 // Track List
                 VStack(alignment: .leading) {
                     Text("Tracks")
@@ -112,6 +147,13 @@ struct AlbumDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             fetchTracks()
+            if let albumRating = album.rating {
+                self.rating = albumRating
+                self.isAlreadyCompleted = true
+            }
+            if let albumComment = album.comment {
+                self.comment = albumComment
+            }
         }
     }
     
@@ -128,6 +170,18 @@ struct AlbumDetailView: View {
             } catch {
                 print("Error fetching album tracks: \(error)")
                 self.isLoading = false
+            }
+        }
+    }
+    
+    private func logAsCompleted() {
+        DatabaseManager.shared.logAlbumAsCompleted(withId: album.id, rating: rating, comment: comment) { error in
+            if let error = error {
+                print("Error logging album as completed: \(error.localizedDescription)")
+            } else {
+                Task { @MainActor in
+                    await ListManager.shared.fetchListenList(forceReload: true)
+                }
             }
         }
     }

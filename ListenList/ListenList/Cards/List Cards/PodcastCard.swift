@@ -71,6 +71,16 @@ struct PodcastCard: View {
                         Text(podcast.publisher)
                             .lineLimit(1)
                             .opacity(0.8)
+                        
+                        if let rating = podcast.rating, podcast.isCompleted ?? false {
+                            HStack(spacing: 2) {
+                                ForEach(1...5, id: \.self) { index in
+                                    Image(systemName: index <= rating ? "star.fill" : "star")
+                                        .font(.caption2)
+                                        .foregroundColor(index <= rating ? .yellow : .gray)
+                                }
+                            }
+                        }
                     }
 
                     Spacer()

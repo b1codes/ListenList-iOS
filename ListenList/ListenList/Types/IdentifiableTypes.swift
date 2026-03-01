@@ -15,6 +15,9 @@ struct Song: Identifiable, Hashable {
     var name: String
     var popularity: Int
     var explicit: Bool
+    var rating: Int?
+    var comment: String?
+    var isCompleted: Bool? = false
 }
 
 struct Artist: Identifiable, Hashable {
@@ -37,6 +40,9 @@ struct Album: Identifiable, Hashable {
     var isExplicit: Bool? = false
     var genres: [String]?
     var label: String?
+    var rating: Int?
+    var comment: String?
+    var isCompleted: Bool? = false
 }
 
 extension Album {
@@ -50,6 +56,9 @@ extension Album {
         self.artists = artists
         self.album_type = dto.albumType
         self.isExplicit = dto.isExplicit
+        self.rating = dto.rating
+        self.comment = dto.comment
+        self.isCompleted = dto.isCompleted
     }
     
     // Keep the old initializer for now, but we'll phase it out.
@@ -63,9 +72,12 @@ extension Album {
         self.artists = []
         self.album_type = dto.albumType
         self.isExplicit = dto.isExplicit
+        self.rating = dto.rating
+        self.comment = dto.comment
+        self.isCompleted = dto.isCompleted
     }
     
-    init(id: String, images: [ImageResponse], name: String, release_date: String, artists: [Artist], album_type: String, isExplicit: Bool, genres: [String]? = nil, label: String? = nil) {
+    init(id: String, images: [ImageResponse], name: String, release_date: String, artists: [Artist], album_type: String, isExplicit: Bool, genres: [String]? = nil, label: String? = nil, rating: Int? = nil, comment: String? = nil, isCompleted: Bool? = false) {
         self.id = id
         self.images = images
         self.name = name
@@ -75,6 +87,9 @@ extension Album {
         self.isExplicit = isExplicit
         self.genres = genres
         self.label = label
+        self.rating = rating
+        self.comment = comment
+        self.isCompleted = isCompleted
     }
 
 }
@@ -98,6 +113,9 @@ struct Podcast: Identifiable, Hashable {
     var explicit: Bool
     var description: String
     var total_episodes: Int
+    var rating: Int?
+    var comment: String?
+    var isCompleted: Bool? = false
 }
 
 struct Audiobook: Identifiable, Hashable {
@@ -111,6 +129,9 @@ struct Audiobook: Identifiable, Hashable {
     var narrators: [Narrator]
     var publisher: String
     var total_chapters: Int?
+    var rating: Int?
+    var comment: String?
+    var isCompleted: Bool? = false
 }
 
 struct Narrator: Hashable {

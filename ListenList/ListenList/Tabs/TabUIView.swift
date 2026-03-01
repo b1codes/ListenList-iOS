@@ -28,6 +28,12 @@ struct TabUIView: View {
                         Text("Search")
                     }
             }
+            
+            CompletedMediaView()
+                .tabItem {
+                    Image(systemName: "checkmark.seal.fill")
+                    Text("Completed")
+                }
         }
         .environmentObject(listManager)
         .navigationBarBackButtonHidden(true)

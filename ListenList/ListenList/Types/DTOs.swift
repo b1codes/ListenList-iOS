@@ -65,6 +65,9 @@ struct AlbumDTO: Codable {
     let artists: [DocumentReference]  // If needed, you can later fetch these.
     var showOnList: Bool? // Add this new field
     let isExplicit: Bool?
+    var rating: Int?
+    var comment: String?
+    var isCompleted: Bool?
 
     static func toAlbum(from ref: DocumentReference, completion: @escaping (AlbumDTO?) -> Void) {
         ref.getDocument { (document, error) in
@@ -85,13 +88,16 @@ struct AlbumDTO: Codable {
             let albumType = data["album_type"] as? String ?? ""
             let showOnList = data["showOnList"] as? Bool ?? false
             let isExplicit = data["isExplicit"] as? Bool ?? false
+            let rating = data["rating"] as? Int
+            let comment = data["comment"] as? String
+            let isCompleted = data["isCompleted"] as? Bool ?? false
             
             // Correctly get the artist document references
             let artistRefs = data["artists"] as? [DocumentReference] ?? []
 
             if let imageDicts = data["images"] as? [[String: Any]] {
                 let images = imageDicts.compactMap { ImageDTO.toImageResponse(from: $0) }
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: images, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit)
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: images, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
                 completion(albumDTO)
             } else if let imageRefs = data["images"] as? [DocumentReference] {
                 var fetchedImages: [ImageResponse] = []
@@ -108,11 +114,11 @@ struct AlbumDTO: Codable {
                 }
                 
                 group.notify(queue: .main) {
-                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: fetchedImages, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit)
+                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: fetchedImages, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
                     completion(albumDTO)
                 }
             } else {
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: [], artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit)
+                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: [], artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
                 completion(albumDTO)
             }
         }
@@ -130,9 +136,12 @@ struct SongDTO: Codable {
     var isExplicit: Bool
     var album: DocumentReference?
     var artists: [DocumentReference] = []
+    var rating: Int?
+    var comment: String?
+    var isCompleted: Bool?
     
     enum CodingKeys: String, CodingKey {
-        case name, popularity, durationMs, isExplicit, album, artists
+        case name, popularity, durationMs, isExplicit, album, artists, rating, comment, isCompleted
     }
     
     init(from decoder: Decoder) throws {
@@ -149,6 +158,9 @@ struct SongDTO: Codable {
         }
         album = try? container.decode(DocumentReference.self, forKey: .album)
         artists = (try? container.decode([DocumentReference].self, forKey: .artists)) ?? []
+        rating = try? container.decode(Int.self, forKey: .rating)
+        comment = try? container.decode(String.self, forKey: .comment)
+        isCompleted = (try? container.decode(Bool.self, forKey: .isCompleted)) ?? false
     }
     
     static func toSong(from dto: SongDTO, completion: @escaping (Song?) -> Void) {
@@ -186,13 +198,19 @@ struct SongDTO: Codable {
                         name: albumDTO.name,
                         release_date: albumDTO.releaseDate,
                         artists: [],
-                        album_type: albumDTO.albumType// Fetch album artists if required.
+                        album_type: albumDTO.albumType, // Fetch album artists if required.
+                        rating: albumDTO.rating,
+                        comment: albumDTO.comment,
+                        isCompleted: albumDTO.isCompleted
                     ),
                     artists: artists,
                     duration_ms: dto.durationMs,
                     name: dto.name,
                     popularity: dto.popularity,
-                    explicit: dto.isExplicit
+                    explicit: dto.isExplicit,
+                    rating: dto.rating,
+                    comment: dto.comment,
+                    isCompleted: dto.isCompleted
                 )
                 completion(song)
             }
