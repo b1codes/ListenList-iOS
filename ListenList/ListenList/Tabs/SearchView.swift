@@ -7,6 +7,9 @@ struct SearchView: View {
     var searchManager: SpotifyAPIManager
     var accessToken: String
     var tokenType: String
+    
+    @EnvironmentObject var listManager: ListManager
+    
     @State private var cards = [Card]()
     @State private var searchBy = 0
     @State private var searchText: String = ""
@@ -212,6 +215,7 @@ struct SearchView: View {
                         print("Error adding song to database: \(error.localizedDescription)")
                     } else {
                         listenListIDs.insert(song.id)
+                        Task { await listManager.fetchListenList(forceReload: true) }
                     }
                 }
             }
@@ -222,6 +226,7 @@ struct SearchView: View {
                         print("Error adding album to database: \(error.localizedDescription)")
                     } else {
                         listenListIDs.insert(album.id)
+                        Task { await listManager.fetchListenList(forceReload: true) }
                     }
                 }
             }
@@ -232,6 +237,7 @@ struct SearchView: View {
                         print("Error adding artist to database: \(error.localizedDescription)")
                     } else {
                         listenListIDs.insert(artist.id)
+                        Task { await listManager.fetchListenList(forceReload: true) }
                     }
                 }
             }
@@ -242,6 +248,7 @@ struct SearchView: View {
                         print("Error adding podcast to database: \(error.localizedDescription)")
                     } else {
                         listenListIDs.insert(podcast.id)
+                        Task { await listManager.fetchListenList(forceReload: true) }
                     }
                 }
             }
@@ -252,6 +259,7 @@ struct SearchView: View {
                         print("Error adding audiobook to database: \(error.localizedDescription)")
                     } else {
                         listenListIDs.insert(audiobook.id)
+                        Task { await listManager.fetchListenList(forceReload: true) }
                     }
                 }
             }

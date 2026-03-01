@@ -11,6 +11,7 @@ import Foundation
 struct TabUIView: View {
     
     @EnvironmentObject var authManager: AuthManager
+    @StateObject private var listManager = ListManager.shared
     
     var body: some View {
         TabView {
@@ -28,6 +29,7 @@ struct TabUIView: View {
                     }
             }
         }
+        .environmentObject(listManager)
         .navigationBarBackButtonHidden(true)
     }
 }
