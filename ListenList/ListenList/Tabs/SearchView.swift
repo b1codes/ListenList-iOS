@@ -4,24 +4,30 @@ import SwiftUI
 import FirebaseFirestore
 
 struct SearchView: View {
-    var spotifyManager: SpotifyAPIManager
+    var searchManager: SpotifyAPIManager
     var accessToken: String
     var tokenType: String
     
     @EnvironmentObject var listManager: ListManager
-    @EnvironmentObject var searchManager: SearchManager
     
     @State private var cards = [Card]()
     @State private var suggestionCards = [Card]()
+    @State private var searchBy = 0
+    @State private var searchText: String = ""
     @State private var isLoading = false
     @State private var isLoadingSuggestions = false
+    @FocusState private var isTextFieldFocused: Bool
     @State private var currentSearchTask: Task<Void, Never>? = nil
     @State private var listenListIDs = Set<String>()
+    @State private var showCancelButton = false
+    
+    private let searchFieldAnimation = Animation.easeInOut(duration: 0.35)
+
     
     init(access: String, type: String) {
         self.accessToken = access
         self.tokenType = type
-        self.spotifyManager = SpotifyAPIManager(access: access, token: type)
+        self.searchManager = SpotifyAPIManager(access: access, token: type)
         self.cards = []
     }
 
@@ -59,19 +65,21 @@ struct SearchView: View {
     
     @MainActor
     func fetchSuggestions() async {
-        guard searchManager.searchText.isEmpty else { return }
+        guard searchText.isEmpty else { return }
         self.isLoadingSuggestions = true
         defer { self.isLoadingSuggestions = false }
         
         var contextQueries: [String] = []
         
-        if let topArtists = try? await spotifyManager.getTopArtists() {
+        // 1. Get Top Artists/Tracks context from Spotify
+        if let topArtists = try? await searchManager.getTopArtists() {
             contextQueries.append(contentsOf: topArtists.items.prefix(3).map { $0.name })
         }
-        if let topTracks = try? await spotifyManager.getTopTracks() {
+        if let topTracks = try? await searchManager.getTopTracks() {
             contextQueries.append(contentsOf: topTracks.items.prefix(3).map { $0.name })
         }
         
+        // 2. Get high rated media from local DB for more context
         let highRatedSongs: [String] = await withCheckedContinuation { continuation in
             DatabaseManager.shared.fetchHighRatedMedia(collection: "songs") { docs, error in
                 let names = docs?.compactMap { $0.data()["name"] as? String } ?? []
@@ -91,18 +99,21 @@ struct SearchView: View {
         do {
             var rawResults: [Card] = []
             
-            switch searchManager.searchBy {
+            // 3. Fetch suggestions based on active category
+            switch self.searchBy {
             case 0: // Albums
-                if let newResults = try? await spotifyManager.search(query: "tag:new", type: "album"), let items = newResults.albums?.items {
+                // Variety: "tag:new"
+                if let newResults = try? await searchManager.search(query: "tag:new", type: "album"), let items = newResults.albums?.items {
                     rawResults.append(contentsOf: items.prefix(3).map { albumResponse in
                         let artists = albumResponse.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
                         let album = Album(id: albumResponse.id, images: albumResponse.images, name: albumResponse.name, release_date: albumResponse.release_date, artists: artists, album_type: albumResponse.album_type, isExplicit: false)
                         return Card(input: .album, media: Media(input: .album(album)), id: album.id)
                     })
                 }
+                // Personalized: Search using context
                 let seeds = contextQueries.shuffled().prefix(2)
                 for seed in seeds {
-                    if let contextResults = try? await spotifyManager.search(query: seed, type: "album"),
+                    if let contextResults = try? await searchManager.search(query: seed, type: "album"),
                        let items = contextResults.albums?.items {
                         rawResults.append(contentsOf: items.prefix(2).map { albumResponse in
                             let artists = albumResponse.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
@@ -115,7 +126,7 @@ struct SearchView: View {
             case 1: // Artists
                 let seeds = contextQueries.shuffled().prefix(3)
                 for query in seeds {
-                    if let results = try? await spotifyManager.search(query: query, type: "artist"), let items = results.artists?.items {
+                    if let results = try? await searchManager.search(query: query, type: "artist"), let items = results.artists?.items {
                         rawResults.append(contentsOf: items.prefix(2).map { artist in
                             return Card(input: .artist, media: Media(input: .artist(Artist(id: artist.id, images: artist.images, name: artist.name, popularity: artist.popularity, artistId: artist.id, genres: artist.genres))), id: artist.id)
                         })
@@ -123,7 +134,8 @@ struct SearchView: View {
                 }
                 
             case 2: // Songs
-                if let newResults = try? await spotifyManager.search(query: "tag:new", type: "track"), let items = newResults.tracks?.items {
+                // Variety: "tag:new"
+                if let newResults = try? await searchManager.search(query: "tag:new", type: "track"), let items = newResults.tracks?.items {
                     rawResults.append(contentsOf: items.prefix(3).map { song in
                         let albumArtists = song.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
                         let songArtists = song.artists.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) }
@@ -131,9 +143,10 @@ struct SearchView: View {
                         return Card(input: .song, media: Media(input: .song(Song(id: song.id, album: album, artists: songArtists, duration_ms: song.duration_ms, name: song.name, popularity: song.popularity, explicit: song.explicit))), id: song.id)
                     })
                 }
+                // Personalized
                 let seeds = contextQueries.shuffled().prefix(2)
                 for seed in seeds {
-                    if let contextResults = try? await spotifyManager.search(query: seed, type: "track"),
+                    if let contextResults = try? await searchManager.search(query: seed, type: "track"),
                        let items = contextResults.tracks?.items {
                         rawResults.append(contentsOf: items.prefix(2).map { song in
                             let albumArtists = song.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
@@ -145,7 +158,7 @@ struct SearchView: View {
                 }
                 
             case 3: // Podcasts
-                if let results = try? await spotifyManager.search(query: "podcast", type: "show"), let items = results.shows?.items {
+                if let results = try? await searchManager.search(query: "podcast", type: "show"), let items = results.shows?.items {
                     rawResults = items.map { show in
                         let podcast = Podcast(id: show.id, name: show.name, publisher: show.publisher, images: show.images, explicit: show.explicit, description: show.description, total_episodes: show.total_episodes)
                         return Card(input: .podcast, media: Media(input: .podcast(podcast)), id: podcast.id)
@@ -153,7 +166,7 @@ struct SearchView: View {
                 }
                 
             case 4: // Audiobooks
-                if let results = try? await spotifyManager.search(query: "audiobook", type: "audiobook"), let items = results.audiobooks?.items {
+                if let results = try? await searchManager.search(query: "audiobook", type: "audiobook"), let items = results.audiobooks?.items {
                     rawResults = items.map { audiobookResponse in
                         let authors = audiobookResponse.authors.map { Author(name: $0.name) }
                         let narrators = audiobookResponse.narrators.map { Narrator(name: $0.name) }
@@ -166,6 +179,7 @@ struct SearchView: View {
                 rawResults = []
             }
             
+            // Deduplicate based on ID while preserving order
             var uniqueIds = Set<String>()
             var uniqueResults: [Card] = []
             for card in rawResults {
@@ -184,7 +198,7 @@ struct SearchView: View {
         self.isLoading = true
         defer { self.isLoading = false }
 
-        switch searchManager.searchBy {
+        switch self.searchBy {
             case 0: return await searchAlbums()
             case 1: return await searchArtists()
             case 2: return await searchSongs()
@@ -195,13 +209,13 @@ struct SearchView: View {
 
     func searchAlbums() async -> [Card] {
         do {
-            if let albumSearchResults = try await spotifyManager.search(query: searchManager.searchText, type: "album"),
+            if let albumSearchResults = try await searchManager.search(query: searchText, type: "album"),
                let albums = albumSearchResults.albums {
                 
                 var albumCards: [Card] = []
                 for albumResponse in albums.items {
                     var isExplicit = false
-                    if let tracksResponse = try await spotifyManager.getAlbumTracks(albumId: albumResponse.id) {
+                    if let tracksResponse = try await searchManager.getAlbumTracks(albumId: albumResponse.id) {
                         if tracksResponse.items.contains(where: { $0.explicit }) {
                             isExplicit = true
                         }
@@ -231,7 +245,7 @@ struct SearchView: View {
 
     func searchSongs() async -> [Card] {
         do {
-            if let songSearchResults = try await spotifyManager.search(query: searchManager.searchText, type: "track"),
+            if let songSearchResults = try await searchManager.search(query: searchText, type: "track"),
                let songs = songSearchResults.tracks {
                 
                 return songs.items.map { song in
@@ -249,7 +263,7 @@ struct SearchView: View {
     
     func searchArtists() async -> [Card] {
         do {
-            if let artistSearchResults = try await spotifyManager.search(query: searchManager.searchText, type: "artist"),
+            if let artistSearchResults = try await searchManager.search(query: searchText, type: "artist"),
                let artists = artistSearchResults.artists {
                     
                     return artists.items.map { artist in
@@ -265,7 +279,7 @@ struct SearchView: View {
 
     func searchPodcasts() async -> [Card] {
         do {
-            if let showSearchResults = try await spotifyManager.search(query: searchManager.searchText, type: "show"),
+            if let showSearchResults = try await searchManager.search(query: searchText, type: "show"),
                let shows = showSearchResults.shows {
                 return shows.items.map { show in
                     let podcast = Podcast(id: show.id, name: show.name, publisher: show.publisher, images: show.images, explicit: show.explicit, description: show.description, total_episodes: show.total_episodes)
@@ -280,7 +294,7 @@ struct SearchView: View {
 
     func searchAudiobooks() async -> [Card] {
         do {
-            if let audiobookSearchResults = try await spotifyManager.search(query: searchManager.searchText, type: "audiobook"),
+            if let audiobookSearchResults = try await searchManager.search(query: searchText, type: "audiobook"),
                let audiobooks = audiobookSearchResults.audiobooks {
                 return audiobooks.items.map { audiobookResponse in
                     let authors = audiobookResponse.authors.map { Author(name: $0.name) }
@@ -297,24 +311,33 @@ struct SearchView: View {
 
     @MainActor
     func startSearch() async {
-        guard !searchManager.searchText.isEmpty else { return }
+        guard !self.searchText.isEmpty else { return }
         
         currentSearchTask?.cancel()
         
-        let thisQuery = searchManager.searchText
+        let thisQuery = self.searchText
         self.isLoading = true
         self.cards = []
+        self.isTextFieldFocused = false
         
         currentSearchTask = Task {
             let results: [Card] = await performSearch()
             
-            if searchManager.searchText == thisQuery {
+            if self.searchText == thisQuery {
                 self.cards = results
             }
             self.isLoading = false
         }
     }
 
+    func resetSearch() {
+        searchText = ""
+        cards = []
+        isLoading = false
+        isTextFieldFocused = false
+        showCancelButton = false
+    }
+    
     func onAdd(card: Card) {
         switch card.type {
         case .song:
@@ -379,8 +402,7 @@ struct SearchView: View {
         NavigationView {
             ScrollView {
                 VStack {
-                    // Category Picker - always show so user can pick what they're searching for
-                    Picker(selection: $searchManager.searchBy, label: Text("Search Filter")) {
+                    Picker(selection: $searchBy, label: Text("Search Filter")) {
                         Text("Album").tag(0)
                         Text("Artist").tag(1)
                         Text("Song").tag(2)
@@ -390,17 +412,55 @@ struct SearchView: View {
                     .pickerStyle(SegmentedPickerStyle())
                     .padding()
                     
-                    // Fallback search bar for older iOS
-                    if #unavailable(iOS 26.0) {
+                    if #available(iOS 26.0, *) {
+                        GlassEffectContainer(spacing: 16) {
+                            HStack {
+                                TextField("Search...", text: $searchText)
+                                    .focused($isTextFieldFocused)
+                                    .onSubmit {
+                                        Task { await startSearch() }
+                                    }
+                                    .padding(7)
+                                    .padding(.horizontal, 25)
+                                    .glassEffect(.regular.tint(Color(.systemGray4)).interactive(), in: .rect(cornerRadius: 16))
+                                    .padding(.horizontal, 10)
+                                
+                                if showCancelButton {
+                                    Button("Cancel") {
+                                        resetSearch()
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(7)
+                                    .glassEffect(.regular.tint(.red).interactive(), in: .rect(cornerRadius: 16))
+                                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .animation(searchFieldAnimation, value: searchText.isEmpty)
+                            .onChange(of: searchText) {
+                                // This closure now captures the `searchText` state directly.
+                                if searchText.isEmpty {
+                                    showCancelButton = false
+                                } else {
+                                    // We still manage the cancel button's appearance.
+                                    showCancelButton = true
+                                }
+                            }
+                        }
+                    } else {
                         HStack {
-                            TextField("Search...", text: $searchManager.searchText)
+                            TextField("Search...", text: $searchText)
+                                .focused($isTextFieldFocused)
+                                .onSubmit {
+                                    Task { await startSearch() }
+                                }
                                 .padding(7)
                                 .padding(.horizontal, 25)
                                 .padding(.horizontal, 10)
                             
-                            if !searchManager.searchText.isEmpty {
+                            if !searchText.isEmpty {
                                 Button("Cancel") {
-                                    searchManager.searchText = ""
+                                    resetSearch()
                                 }
                                 .foregroundColor(.blue)
                                 .padding(.trailing, 10)
@@ -410,11 +470,11 @@ struct SearchView: View {
                     
                     if isLoading {
                         ProgressView("Searching...").padding()
-                    } else if isLoadingSuggestions && searchManager.searchText.isEmpty {
+                    } else if isLoadingSuggestions && searchText.isEmpty {
                         ProgressView("Loading Suggestions...").padding()
                     }
                     
-                    if searchManager.searchText.isEmpty && !suggestionCards.isEmpty {
+                    if searchText.isEmpty && !suggestionCards.isEmpty {
                         VStack(alignment: .leading) {
                             Text("Recommended for You")
                                 .font(.headline)
@@ -429,32 +489,18 @@ struct SearchView: View {
                 }
                 
             }
+            .onTapGesture { isTextFieldFocused = false }
             .navigationTitle("Search")
             .onAppear {
                 fetchListenListIDs()
                 Task { await fetchSuggestions() }
             }
-            .onChange(of: searchManager.searchBy) {
-                if searchManager.searchText.isEmpty {
+            .onChange(of: searchBy) {
+                if searchText.isEmpty {
                     Task { await fetchSuggestions() }
-                } else {
-                    Task { await startSearch() }
-                }
-            }
-            .onChange(of: searchManager.searchText) {
-                if searchManager.searchText.isEmpty {
-                    cards = []
-                } else {
-                    // Debounce search
-                    currentSearchTask?.cancel()
-                    currentSearchTask = Task {
-                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s debounce
-                        if !Task.isCancelled {
-                            await startSearch()
-                        }
-                    }
                 }
             }
         }
     }
 }
+
