@@ -283,6 +283,20 @@ class ListManager: ObservableObject {
         // Optimistic delete
         withAnimation {
             cards.removeAll { $0.id == card.id }
+            
+            // Also remove from the underlying source arrays to keep state consistent
+            switch card.type {
+            case .song:
+                songs.removeAll { $0.id == card.id }
+            case .album:
+                albums.removeAll { $0.id == card.id }
+            case .artist:
+                artists.removeAll { $0.id == card.id }
+            case .podcast:
+                podcasts.removeAll { $0.id == card.id }
+            case .audiobook:
+                audiobooks.removeAll { $0.id == card.id }
+            }
         }
         
         switch card.type {
@@ -290,35 +304,35 @@ class ListManager: ObservableObject {
             DatabaseManager.shared.deleteSong(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting song: \(error.localizedDescription)")
-                    Task { await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         case .album:
-            DatabaseManager.shared.deleteAlbum(withId: card.id) { error in
+            DatabaseManager.shared.updateAlbumShowOnList(withId: card.id, showOnList: false) { error in
                 if let error = error {
-                    print("Error deleting album: \(error.localizedDescription)")
-                    Task { await self.fetchListenList(forceReload: true) }
+                    print("Error updating album: \(error.localizedDescription)")
+                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         case .artist:
             DatabaseManager.shared.updateArtistShowOnList(withId: card.id, showOnList: false) { error in
                 if let error = error {
                     print("Error updating artist: \(error.localizedDescription)")
-                    Task { await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         case .podcast:
             DatabaseManager.shared.deletePodcast(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting podcast: \(error.localizedDescription)")
-                    Task { await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         case .audiobook:
             DatabaseManager.shared.deleteAudiobook(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting audiobook: \(error.localizedDescription)")
-                    Task { await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         }

@@ -22,24 +22,41 @@ struct CardList: View {
                     { deleteFunc(item) }
                 }
 
-                NavigationLink {
-                    destinationView(for: item)
-                } label: {
-                    switch item.type {
-                    case .song:
-                        SongCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
-                    case .album:
-                        AlbumCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
-                    case .artist:
-                        ArtistCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
-                    case .podcast:
-                        PodcastCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
-                    case .audiobook:
-                        AudiobookCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                ZStack {
+                    NavigationLink {
+                        destinationView(for: item)
+                    } label: {
+                        switch item.type {
+                        case .song:
+                            SongCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                        case .album:
+                            AlbumCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                        case .artist:
+                            ArtistCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                        case .podcast:
+                            PodcastCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                        case .audiobook:
+                            AudiobookCard(input: item.input, onAdd: addAction, isInEditMode: isInEditMode, onDelete: deleteAction, isSaved: isSaved)
+                        }
+                    }
+                    .disabled(isInEditMode)
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    if isInEditMode {
+                        switch item.type {
+                        case .song:
+                            SongCard(input: item.input, onAdd: addAction, isInEditMode: true, onDelete: deleteAction, isSaved: isSaved)
+                        case .album:
+                            AlbumCard(input: item.input, onAdd: addAction, isInEditMode: true, onDelete: deleteAction, isSaved: isSaved)
+                        case .artist:
+                            ArtistCard(input: item.input, onAdd: addAction, isInEditMode: true, onDelete: deleteAction, isSaved: isSaved)
+                        case .podcast:
+                            PodcastCard(input: item.input, onAdd: addAction, isInEditMode: true, onDelete: deleteAction, isSaved: isSaved)
+                        case .audiobook:
+                            AudiobookCard(input: item.input, onAdd: addAction, isInEditMode: true, onDelete: deleteAction, isSaved: isSaved)
+                        }
                     }
                 }
-                .disabled(isInEditMode)
-                .buttonStyle(PlainButtonStyle())
             }
         }
         .id(results.count)

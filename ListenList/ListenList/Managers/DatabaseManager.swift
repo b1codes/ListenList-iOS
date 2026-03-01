@@ -274,15 +274,28 @@ class DatabaseManager {
             }
         }
         
-        let albumData: [String: Any] = [
-            "name": album.name,
-            "release_date": album.release_date,
-            "images": album.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
-            "artists": album.artists.map { db.collection("artists").document($0.id) },
-            "showOnList": showOnList,
-            "album_type": album.album_type
-        ]
-        db.collection("albums").document(album.id).setData(albumData, merge: true, completion: completion)
+        let albumRef = db.collection("albums").document(album.id)
+        albumRef.getDocument { (document, error) in
+            var albumData: [String: Any] = [
+                "name": album.name,
+                "release_date": album.release_date,
+                "images": album.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
+                "artists": album.artists.map { self.db.collection("artists").document($0.id) },
+                "album_type": album.album_type
+            ]
+            
+            if let document = document, document.exists {
+                // Only update showOnList if we're explicitly setting it to true
+                if showOnList {
+                    albumData["showOnList"] = true
+                }
+            } else {
+                // New document, set to the requested value
+                albumData["showOnList"] = showOnList
+            }
+            
+            albumRef.setData(albumData, merge: true, completion: completion)
+        }
     }
     
     func addPodcast(podcast: Podcast, completion: @escaping (Error?) -> Void) {
@@ -319,15 +332,34 @@ class DatabaseManager {
         ], completion: completion)
     }
 
+    func updateAlbumShowOnList(withId albumId: String, showOnList: Bool, completion: @escaping (Error?) -> Void) {
+        db.collection("albums").document(albumId).updateData([
+            "showOnList": showOnList
+        ], completion: completion)
+    }
+
 
     func addArtist(artist: Artist, showOnList: Bool, completion: @escaping (Error?) -> Void) {
-        let artistData: [String: Any] = [
-            "name": artist.name,
-            "popularity": artist.popularity ?? 0,
-            "images": artist.images?.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] } ?? [],
-            "showOnList": showOnList
-        ]
-        db.collection("artists").document(artist.id).setData(artistData, merge: true, completion: completion)
+        let artistRef = db.collection("artists").document(artist.id)
+        artistRef.getDocument { (document, error) in
+            var artistData: [String: Any] = [
+                "name": artist.name,
+                "popularity": artist.popularity ?? 0,
+                "images": artist.images?.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] } ?? []
+            ]
+            
+            if let document = document, document.exists {
+                // Only update showOnList if we're explicitly setting it to true
+                if showOnList {
+                    artistData["showOnList"] = true
+                }
+            } else {
+                // New document, set to the requested value
+                artistData["showOnList"] = showOnList
+            }
+            
+            artistRef.setData(artistData, merge: true, completion: completion)
+        }
     }
 
     // MARK: - Delete Functions
