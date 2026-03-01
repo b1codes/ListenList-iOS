@@ -34,6 +34,12 @@ struct TabUIView: View {
                     Image(systemName: "checkmark.seal.fill")
                     Text("Completed")
                 }
+
+            SettingsView()
+                .tabItem {
+                    Image(systemName: "gearshape.fill")
+                    Text("Settings")
+                }
         }
         .environmentObject(listManager)
         .navigationBarBackButtonHidden(true)

@@ -86,4 +86,31 @@ class SpotifyAPIManager: ObservableObject {
                 throw error
             }
         }
+
+    func getCurrentUserProfile() async throws -> UserProfileResponse? {
+        let urlStr = "https://api.spotify.com/v1/me"
+        let requestHeaders: [String: String] = ["Authorization": "\(tokenType) \(accessToken)"]
+
+        guard let url = URL(string: urlStr) else {
+            throw URLError(.badURL)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.allHTTPHeaderFields = requestHeaders
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+                throw URLError(.badServerResponse)
+            }
+
+            let responseObject = try JSONDecoder().decode(UserProfileResponse.self, from: data)
+            return responseObject
+
+        } catch {
+            print("Error occurred while getting user profile: \(error)")
+            throw error
+        }
+    }
 }

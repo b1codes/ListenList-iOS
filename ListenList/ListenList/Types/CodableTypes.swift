@@ -154,3 +154,10 @@ struct SearchResponse: Codable, Hashable {
     var shows: ShowSearchResponse?
     var audiobooks: AudiobookSearchResponse?
 }
+
+struct UserProfileResponse: Codable, Hashable {
+    var display_name: String?
+    var email: String?
+    var id: String
+    var images: [ImageResponse]?
+}
