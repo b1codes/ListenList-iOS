@@ -80,6 +80,7 @@ struct ListenListApp: App {
                 }
             }
             .environmentObject(authManager)
+            .environmentObject(SearchManager.shared)
         }
     }
 }
