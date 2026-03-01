@@ -418,4 +418,13 @@ class DatabaseManager {
         ], completion: completion)
     }
 
+    func fetchHighRatedMedia(collection: String, completion: @escaping ([QueryDocumentSnapshot]?, Error?) -> Void) {
+        db.collection(collection)
+            .whereField("isCompleted", isEqualTo: true)
+            .whereField("rating", isGreaterThanOrEqualTo: 4)
+            .limit(to: 10)
+            .getDocuments { snapshot, error in
+                completion(snapshot?.documents, error)
+            }
+    }
 }

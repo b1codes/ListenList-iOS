@@ -11,9 +11,11 @@ struct SearchView: View {
     @EnvironmentObject var listManager: ListManager
     
     @State private var cards = [Card]()
+    @State private var suggestionCards = [Card]()
     @State private var searchBy = 0
     @State private var searchText: String = ""
     @State private var isLoading = false
+    @State private var isLoadingSuggestions = false
     @FocusState private var isTextFieldFocused: Bool
     @State private var currentSearchTask: Task<Void, Never>? = nil
     @State private var listenListIDs = Set<String>()
@@ -61,6 +63,136 @@ struct SearchView: View {
         }
     }
     
+    @MainActor
+    func fetchSuggestions() async {
+        guard searchText.isEmpty else { return }
+        self.isLoadingSuggestions = true
+        defer { self.isLoadingSuggestions = false }
+        
+        var contextQueries: [String] = []
+        
+        // 1. Get Top Artists/Tracks context from Spotify
+        if let topArtists = try? await searchManager.getTopArtists() {
+            contextQueries.append(contentsOf: topArtists.items.prefix(3).map { $0.name })
+        }
+        if let topTracks = try? await searchManager.getTopTracks() {
+            contextQueries.append(contentsOf: topTracks.items.prefix(3).map { $0.name })
+        }
+        
+        // 2. Get high rated media from local DB for more context
+        let highRatedSongs: [String] = await withCheckedContinuation { continuation in
+            DatabaseManager.shared.fetchHighRatedMedia(collection: "songs") { docs, error in
+                let names = docs?.compactMap { $0.data()["name"] as? String } ?? []
+                continuation.resume(returning: names)
+            }
+        }
+        contextQueries.append(contentsOf: highRatedSongs.prefix(3))
+        
+        let highRatedAlbums: [String] = await withCheckedContinuation { continuation in
+            DatabaseManager.shared.fetchHighRatedMedia(collection: "albums") { docs, error in
+                let names = docs?.compactMap { $0.data()["name"] as? String } ?? []
+                continuation.resume(returning: names)
+            }
+        }
+        contextQueries.append(contentsOf: highRatedAlbums.prefix(3))
+        
+        do {
+            var rawResults: [Card] = []
+            
+            // 3. Fetch suggestions based on active category
+            switch self.searchBy {
+            case 0: // Albums
+                // Variety: "tag:new"
+                if let newResults = try? await searchManager.search(query: "tag:new", type: "album"), let items = newResults.albums?.items {
+                    rawResults.append(contentsOf: items.prefix(3).map { albumResponse in
+                        let artists = albumResponse.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
+                        let album = Album(id: albumResponse.id, images: albumResponse.images, name: albumResponse.name, release_date: albumResponse.release_date, artists: artists, album_type: albumResponse.album_type, isExplicit: false)
+                        return Card(input: .album, media: Media(input: .album(album)), id: album.id)
+                    })
+                }
+                // Personalized: Search using context
+                let seeds = contextQueries.shuffled().prefix(2)
+                for seed in seeds {
+                    if let contextResults = try? await searchManager.search(query: seed, type: "album"),
+                       let items = contextResults.albums?.items {
+                        rawResults.append(contentsOf: items.prefix(2).map { albumResponse in
+                            let artists = albumResponse.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
+                            let album = Album(id: albumResponse.id, images: albumResponse.images, name: albumResponse.name, release_date: albumResponse.release_date, artists: artists, album_type: albumResponse.album_type, isExplicit: false)
+                            return Card(input: .album, media: Media(input: .album(album)), id: album.id)
+                        })
+                    }
+                }
+                
+            case 1: // Artists
+                let seeds = contextQueries.shuffled().prefix(3)
+                for query in seeds {
+                    if let results = try? await searchManager.search(query: query, type: "artist"), let items = results.artists?.items {
+                        rawResults.append(contentsOf: items.prefix(2).map { artist in
+                            return Card(input: .artist, media: Media(input: .artist(Artist(id: artist.id, images: artist.images, name: artist.name, popularity: artist.popularity, artistId: artist.id, genres: artist.genres))), id: artist.id)
+                        })
+                    }
+                }
+                
+            case 2: // Songs
+                // Variety: "tag:new"
+                if let newResults = try? await searchManager.search(query: "tag:new", type: "track"), let items = newResults.tracks?.items {
+                    rawResults.append(contentsOf: items.prefix(3).map { song in
+                        let albumArtists = song.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
+                        let songArtists = song.artists.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) }
+                        let album = Album(id: song.album.id, images: song.album.images, name: song.album.name, release_date: song.album.release_date, artists: albumArtists, album_type: song.album.album_type)
+                        return Card(input: .song, media: Media(input: .song(Song(id: song.id, album: album, artists: songArtists, duration_ms: song.duration_ms, name: song.name, popularity: song.popularity, explicit: song.explicit))), id: song.id)
+                    })
+                }
+                // Personalized
+                let seeds = contextQueries.shuffled().prefix(2)
+                for seed in seeds {
+                    if let contextResults = try? await searchManager.search(query: seed, type: "track"),
+                       let items = contextResults.tracks?.items {
+                        rawResults.append(contentsOf: items.prefix(2).map { song in
+                            let albumArtists = song.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
+                            let songArtists = song.artists.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) }
+                            let album = Album(id: song.album.id, images: song.album.images, name: song.album.name, release_date: song.album.release_date, artists: albumArtists, album_type: song.album.album_type)
+                            return Card(input: .song, media: Media(input: .song(Song(id: song.id, album: album, artists: songArtists, duration_ms: song.duration_ms, name: song.name, popularity: song.popularity, explicit: song.explicit))), id: song.id)
+                        })
+                    }
+                }
+                
+            case 3: // Podcasts
+                if let results = try? await searchManager.search(query: "podcast", type: "show"), let items = results.shows?.items {
+                    rawResults = items.map { show in
+                        let podcast = Podcast(id: show.id, name: show.name, publisher: show.publisher, images: show.images, explicit: show.explicit, description: show.description, total_episodes: show.total_episodes)
+                        return Card(input: .podcast, media: Media(input: .podcast(podcast)), id: podcast.id)
+                    }
+                }
+                
+            case 4: // Audiobooks
+                if let results = try? await searchManager.search(query: "audiobook", type: "audiobook"), let items = results.audiobooks?.items {
+                    rawResults = items.map { audiobookResponse in
+                        let authors = audiobookResponse.authors.map { Author(name: $0.name) }
+                        let narrators = audiobookResponse.narrators.map { Narrator(name: $0.name) }
+                        let audiobook = Audiobook(id: audiobookResponse.id, name: audiobookResponse.name, authors: authors, images: audiobookResponse.images, explicit: audiobookResponse.explicit, description: audiobookResponse.description, edition: audiobookResponse.edition, narrators: narrators, publisher: audiobookResponse.publisher, total_chapters: audiobookResponse.total_chapters ?? 0)
+                        return Card(input: .audiobook, media: Media(input: .audiobook(audiobook)), id: audiobook.id)
+                    }
+                }
+                
+            default:
+                rawResults = []
+            }
+            
+            // Deduplicate based on ID while preserving order
+            var uniqueIds = Set<String>()
+            var uniqueResults: [Card] = []
+            for card in rawResults {
+                if !uniqueIds.contains(card.id) {
+                    uniqueIds.insert(card.id)
+                    uniqueResults.append(card)
+                }
+            }
+            
+            self.suggestionCards = Array(uniqueResults.prefix(6))
+        }
+    }
+
     @MainActor
     func performSearch() async -> [Card] {
         self.isLoading = true
@@ -338,15 +470,36 @@ struct SearchView: View {
                     
                     if isLoading {
                         ProgressView("Searching...").padding()
+                    } else if isLoadingSuggestions && searchText.isEmpty {
+                        ProgressView("Loading Suggestions...").padding()
                     }
                     
-                    CardList(results: cards, onAdd: onAdd, listenListIDs: listenListIDs)
+                    if searchText.isEmpty && !suggestionCards.isEmpty {
+                        VStack(alignment: .leading) {
+                            Text("Recommended for You")
+                                .font(.headline)
+                                .padding(.horizontal)
+                                .padding(.top, 5)
+                            
+                            CardList(results: suggestionCards, onAdd: onAdd, listenListIDs: listenListIDs)
+                        }
+                    } else {
+                        CardList(results: cards, onAdd: onAdd, listenListIDs: listenListIDs)
+                    }
                 }
                 
             }
             .onTapGesture { isTextFieldFocused = false }
             .navigationTitle("Search")
-            .onAppear(perform: fetchListenListIDs)
+            .onAppear {
+                fetchListenListIDs()
+                Task { await fetchSuggestions() }
+            }
+            .onChange(of: searchBy) {
+                if searchText.isEmpty {
+                    Task { await fetchSuggestions() }
+                }
+            }
         }
     }
 }

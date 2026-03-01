@@ -113,4 +113,38 @@ class SpotifyAPIManager: ObservableObject {
             throw error
         }
     }
+
+    func getTopArtists() async throws -> ArtistSearchResponse? {
+        let urlStr = "https://api.spotify.com/v1/me/top/artists?limit=10"
+        let requestHeaders: [String: String] = ["Authorization": "\(tokenType) \(accessToken)"]
+        
+        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.allHTTPHeaderFields = requestHeaders
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        
+        return try JSONDecoder().decode(ArtistSearchResponse.self, from: data)
+    }
+
+    func getTopTracks() async throws -> SongSearchResponse? {
+        let urlStr = "https://api.spotify.com/v1/me/top/tracks?limit=10"
+        let requestHeaders: [String: String] = ["Authorization": "\(tokenType) \(accessToken)"]
+        
+        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.allHTTPHeaderFields = requestHeaders
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        
+        return try JSONDecoder().decode(SongSearchResponse.self, from: data)
+    }
 }
