@@ -76,7 +76,7 @@ struct SongCard: View {
                         Text(artistsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
-                        
+
                         if let rating = song.rating, song.isCompleted ?? false {
                             HStack(spacing: 2) {
                                 ForEach(1...5, id: \.self) { index in
@@ -147,7 +147,7 @@ struct SongCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     // The RoundedRectangle is now layered on top of the image
                     // within the background view.
                     RoundedRectangle(cornerRadius: 15.0)
@@ -175,16 +175,16 @@ struct SongCard: View {
                             ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
                         ],
                         name: "Ordinary (Wedding Version)",
-                        release_date: "2021-01-01",
+                        releaseDate: "2021-01-01",
                         artists: [
                             Artist(id: "1", name: "Alex Warren", artistId: "1")
                         ],
-                        album_type: "single"
+                        albumType: "single"
                     ),
                     artists: [
                         Artist(id: "1", name: "Alex Warren", artistId: "1")
                     ],
-                    duration_ms: 200000,
+                    durationMs: 200000,
                     name: "Ordinary (Wedding Version)",
                     popularity: 100,
                     explicit: false

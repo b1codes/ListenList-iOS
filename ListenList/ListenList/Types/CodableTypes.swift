@@ -4,7 +4,7 @@
 //
 //  Created by Brandon Lamer-Connolly on 10/11/24.
 //
-    
+
 struct SongSearchResponse: Codable, Hashable {
     var href: String
     var limit: Int
@@ -35,11 +35,10 @@ struct AlbumSearchResponse: Codable, Hashable {
     var items: [AlbumResponse]
 }
 
-
 struct SongResponse: Codable, Hashable {
     var album: AlbumResponse
     var artists: [ArtistResponse]
-    var duration_ms: Int //in milliseconds
+    var durationMs: Int // in milliseconds
     var name: String
     var id: String
     var popularity: Int
@@ -57,9 +56,9 @@ struct ArtistResponse: Codable, Hashable {
 struct AlbumResponse: Codable, Hashable {
     var images: [ImageResponse]
     var name: String
-    var release_date: String
+    var releaseDate: String
     var artists: [ArtistResponse]?
-    var album_type: String
+    var albumType: String
     var id: String
     var genres: [String]?
     var label: String?
@@ -80,11 +79,11 @@ extension ImageResponse {
 }
 
 struct AccessTokenResponse: Codable {
-    let access_token: String
-    let token_type: String
+    let accessToken: String
+    let tokenType: String
     let scope: String
-    let expires_in: Int
-    let refresh_token: String?
+    let expiresIn: Int
+    let refreshToken: String?
 }
 
 struct AlbumTracksResponse: Codable, Hashable {
@@ -123,7 +122,7 @@ struct ShowResponse: Codable, Hashable {
     var images: [ImageResponse]
     var explicit: Bool
     var description: String
-    var total_episodes: Int
+    var totalEpisodes: Int
 }
 
 struct AudiobookResponse: Codable, Hashable {
@@ -136,7 +135,7 @@ struct AudiobookResponse: Codable, Hashable {
     var edition: String
     var narrators: [NarratorResponse]
     var publisher: String
-    var total_chapters: Int?
+    var totalChapters: Int?
 }
 
 struct NarratorResponse: Codable, Hashable {
@@ -156,7 +155,7 @@ struct SearchResponse: Codable, Hashable {
 }
 
 struct UserProfileResponse: Codable, Hashable {
-    var display_name: String?
+    var displayName: String?
     var email: String?
     var id: String
     var images: [ImageResponse]?

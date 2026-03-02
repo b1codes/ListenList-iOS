@@ -1,0 +1,34 @@
+disabled_rules:
+  - trailing_whitespace
+  - vertical_whitespace
+  - trailing_newline
+
+line_length:
+  warning: 160
+  error: 300
+
+identifier_name:
+  min_length: 2
+  excluded:
+    - id
+    - db
+    - ds
+    - x
+    - y
+    - z
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 600
+  error: 1000
+
+function_body_length:
+  warning: 100
+  error: 200
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25

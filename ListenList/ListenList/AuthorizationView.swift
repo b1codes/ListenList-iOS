@@ -9,9 +9,9 @@ import SwiftUI
 @preconcurrency import WebKit
 
 struct WebView: UIViewRepresentable {
-    
+
     @EnvironmentObject var authManager: AuthManager
-    
+
     var url: URL
     @Binding var showWebView: Bool
 
@@ -21,19 +21,19 @@ struct WebView: UIViewRepresentable {
         context.coordinator.setupObserver(for: wKWebView)
         return wKWebView
     }
-    
+
     func updateUIView(_ webView: WKWebView, context: Context) {
         let request = URLRequest(url: url)
         webView.load(request)
     }
-    
+
     func makeCoordinator() -> WebViewCoordinator {
         WebViewCoordinator(self)
     }
-    
+
     class WebViewCoordinator: NSObject, WKNavigationDelegate {
         var parent: WebView
-        
+
         private var urlObserver: NSKeyValueObservation?
         private var didFindCode = false
         private var isAwaitingFinalLoad = false
@@ -44,12 +44,12 @@ struct WebView: UIViewRepresentable {
 
         func setupObserver(for webView: WKWebView) {
             if urlObserver == nil {
-                urlObserver = webView.observe(\.url, options: .new) { [weak self] webView, change in
+                urlObserver = webView.observe(\.url, options: .new) { [weak self] webView, _ in
                     guard let self = self, let url = webView.url, !self.didFindCode else { return }
 
-                    let REDIRECT_URI_HOST = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_HOST") as? String
-                    let REDIRECT_URI_SCHEME = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_SCHEME") as? String
-                    let baseRedirectURI = "\(REDIRECT_URI_SCHEME ?? "")://\(REDIRECT_URI_HOST ?? "")"
+                    let redirectURIHost = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_HOST") as? String
+                    let redirectURIScheme = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_SCHEME") as? String
+                    let baseRedirectURI = "\(redirectURIScheme ?? "")://\(redirectURIHost ?? "")"
 
                     if url.absoluteString.starts(with: baseRedirectURI) {
                         if getCodeFromURL(urlString: url.absoluteString) != nil {
@@ -60,7 +60,7 @@ struct WebView: UIViewRepresentable {
                 }
             }
         }
-        
+
         func getCodeFromURL(urlString: String) -> String? {
             return URLComponents(string: urlString)?.queryItems?.first(where: { $0.name == "code" })?.value
         }
@@ -69,7 +69,7 @@ struct WebView: UIViewRepresentable {
             if self.isAwaitingFinalLoad {
                 self.isAwaitingFinalLoad = false
                 guard let url = webView.url, let code = getCodeFromURL(urlString: url.absoluteString) else { return }
-                
+
                 DispatchQueue.main.async {
                     self.parent.authManager.logIn(with: code)
                     self.parent.showWebView = false
@@ -88,12 +88,11 @@ struct WebView: UIViewRepresentable {
     }
 }
 
-
 struct AuthorizationView: View {
-    
+
     @State var showWebView: Bool = false
     var urlString: String
-    
+
     var body: some View {
         NavigationView {
             VStack {

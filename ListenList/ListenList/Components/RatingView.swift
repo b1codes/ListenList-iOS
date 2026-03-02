@@ -5,7 +5,7 @@ import SwiftUI
 struct RatingView: View {
     @Binding var rating: Int
     var maxRating = 5
-    
+
     var body: some View {
         HStack {
             ForEach(1...maxRating, id: \.self) { index in

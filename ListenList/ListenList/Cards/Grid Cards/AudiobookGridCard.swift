@@ -26,7 +26,7 @@ struct AudiobookGridCard: View {
         guard let authors = audiobook?.authors, !authors.isEmpty else { return "Unknown Author" }
         return authors.map { $0.name }.joined(separator: ", ")
     }
-    
+
     private func narratorsToStr() -> String {
         guard let narrators = audiobook?.narrators, !narrators.isEmpty else { return "Unknown Narrator" }
         return narrators.map { $0.name }.joined(separator: ", ")
@@ -83,7 +83,7 @@ struct AudiobookGridCard: View {
                         Text(authorsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
-                        
+
                         if let rating = audiobook.rating, audiobook.isCompleted ?? false {
                             HStack(spacing: 2) {
                                 ForEach(1...5, id: \.self) { index in
@@ -136,7 +136,7 @@ struct AudiobookGridCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }
@@ -166,7 +166,7 @@ struct AudiobookGridCard: View {
                     edition: "Unabridged",
                     narrators: [Narrator(name: "Scott Brick")],
                     publisher: "Macmillan Audio",
-                    total_chapters: 50
+                    totalChapters: 50
                 )
             )
         )

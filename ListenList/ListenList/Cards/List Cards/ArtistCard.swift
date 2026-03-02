@@ -11,7 +11,7 @@ struct ArtistCard: View {
     var isSaved: Bool
 
     let maxHeight: CGFloat = 120
-    
+
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .artist(artist) = input.input {
@@ -22,7 +22,7 @@ struct ArtistCard: View {
         self.onDelete = onDelete
         self.isSaved = isSaved
     }
-    
+
     private var placeholderImage: some View {
         Image(systemName: "music.microphone")
             .resizable()
@@ -30,12 +30,12 @@ struct ArtistCard: View {
             .frame(width: 90, height: 90)
             .cornerRadius(10.0)
     }
-    
+
     var body: some View {
         guard let artist = artist else {
             return AnyView(EmptyView())
         }
-        
+
         return AnyView(
             ZStack(alignment: .leading) {
                 // MARK: - Layer 1: Foreground Content
@@ -126,7 +126,7 @@ struct ArtistCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }

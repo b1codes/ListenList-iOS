@@ -11,7 +11,7 @@ struct Song: Identifiable, Hashable {
     var id: String
     var album: Album
     var artists: [Artist]
-    var duration_ms: Int
+    var durationMs: Int
     var name: String
     var popularity: Int
     var explicit: Bool
@@ -34,9 +34,9 @@ struct Album: Identifiable, Hashable {
     var id: String
     var images: [ImageResponse]
     var name: String
-    var release_date: String
+    var releaseDate: String
     var artists: [Artist]
-    var album_type: String
+    var albumType: String
     var isExplicit: Bool? = false
     var genres: [String]?
     var label: String?
@@ -52,38 +52,38 @@ extension Album {
         self.id = dto.id
         self.images = dto.images
         self.name = dto.name
-        self.release_date = dto.releaseDate
+        self.releaseDate = dto.releaseDate
         self.artists = artists
-        self.album_type = dto.albumType
+        self.albumType = dto.albumType
         self.isExplicit = dto.isExplicit
         self.rating = dto.rating
         self.comment = dto.comment
         self.isCompleted = dto.isCompleted
     }
-    
+
     // Keep the old initializer for now, but we'll phase it out.
     init?(from dto: AlbumDTO?) {
         guard let dto = dto else { return nil }
         self.id = dto.id
         self.images = dto.images
         self.name = dto.name
-        self.release_date = dto.releaseDate
+        self.releaseDate = dto.releaseDate
         // Initialize artists as an empty array, to be populated later.
         self.artists = []
-        self.album_type = dto.albumType
+        self.albumType = dto.albumType
         self.isExplicit = dto.isExplicit
         self.rating = dto.rating
         self.comment = dto.comment
         self.isCompleted = dto.isCompleted
     }
-    
-    init(id: String, images: [ImageResponse], name: String, release_date: String, artists: [Artist], album_type: String, isExplicit: Bool, genres: [String]? = nil, label: String? = nil, rating: Int? = nil, comment: String? = nil, isCompleted: Bool? = false) {
+
+    init(id: String, images: [ImageResponse], name: String, releaseDate: String, artists: [Artist], albumType: String, isExplicit: Bool, genres: [String]? = nil, label: String? = nil, rating: Int? = nil, comment: String? = nil, isCompleted: Bool? = false) {
         self.id = id
         self.images = images
         self.name = name
-        self.release_date = release_date
+        self.releaseDate = releaseDate
         self.artists = artists
-        self.album_type = album_type
+        self.albumType = albumType
         self.isExplicit = isExplicit
         self.genres = genres
         self.label = label
@@ -112,7 +112,7 @@ struct Podcast: Identifiable, Hashable {
     var images: [ImageResponse]
     var explicit: Bool
     var description: String
-    var total_episodes: Int
+    var totalEpisodes: Int
     var rating: Int?
     var comment: String?
     var isCompleted: Bool? = false
@@ -128,7 +128,7 @@ struct Audiobook: Identifiable, Hashable {
     var edition: String
     var narrators: [Narrator]
     var publisher: String
-    var total_chapters: Int?
+    var totalChapters: Int?
     var rating: Int?
     var comment: String?
     var isCompleted: Bool? = false

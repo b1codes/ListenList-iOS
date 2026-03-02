@@ -4,19 +4,19 @@ import SwiftUI
 import FirebaseFirestore
 
 struct ListenListView: View {
-    
+
     @EnvironmentObject var listManager: ListManager
     @State private var isInEditMode = false
     @State private var isGridView = false
-    @State private var filterType: CardType? = nil
-    
+    @State private var filterType: CardType?
+
     @Namespace private var namespace
-    
+
     var filteredCards: [Card] {
         guard let filterType = filterType else { return listManager.cards }
         return listManager.cards.filter { $0.type == filterType }
     }
-    
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -63,7 +63,7 @@ struct ListenListView: View {
                             .font(.body.weight(.semibold))
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 20) {
                         Menu {
@@ -91,7 +91,7 @@ struct ListenListView: View {
                                 .font(.body.weight(.semibold))
                                 .foregroundColor(filterType == nil ? .primary : .accentColor)
                         }
-                        
+
                         Button {
                             withAnimation {
                                 isInEditMode.toggle()
@@ -112,4 +112,3 @@ struct ListenListView: View {
         }
     }
 }
-

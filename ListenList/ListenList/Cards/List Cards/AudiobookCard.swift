@@ -11,7 +11,7 @@ struct AudiobookCard: View {
     var isSaved: Bool
 
     let maxHeight: CGFloat = 120
-    
+
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .audiobook(audiobook) = input.input {
@@ -22,17 +22,17 @@ struct AudiobookCard: View {
         self.onDelete = onDelete
         self.isSaved = isSaved
     }
-    
+
     private func authorsToStr() -> String {
         guard let authors = audiobook?.authors, !authors.isEmpty else { return "Unknown Author" }
         return authors.map { $0.name }.joined(separator: ", ")
     }
-    
+
     private func narratorsToStr() -> String {
         guard let narrators = audiobook?.narrators, !narrators.isEmpty else { return "Unknown Narrator" }
         return narrators.map { $0.name }.joined(separator: ", ")
     }
-    
+
     private var placeholderImage: some View {
         Image(systemName: "book.fill")
             .resizable()
@@ -40,12 +40,12 @@ struct AudiobookCard: View {
             .frame(width: 90, height: 90)
             .cornerRadius(10.0)
     }
-    
+
     var body: some View {
         guard let audiobook = audiobook else {
             return AnyView(EmptyView())
         }
-        
+
         return AnyView(
             ZStack(alignment: .leading) {
                 HStack(spacing: 15) {
@@ -78,7 +78,7 @@ struct AudiobookCard: View {
                         Text(authorsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
-                        
+
                         if let rating = audiobook.rating, audiobook.isCompleted ?? false {
                             HStack(spacing: 2) {
                                 ForEach(1...5, id: \.self) { index in
@@ -148,7 +148,7 @@ struct AudiobookCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }
@@ -178,7 +178,7 @@ struct AudiobookCard: View {
                     edition: "Unabridged",
                     narrators: [Narrator(name: "Scott Brick")],
                     publisher: "Macmillan Audio",
-                    total_chapters: 50
+                    totalChapters: 50
                 )
             )
         )

@@ -4,11 +4,11 @@ import SwiftUI
 
 struct AudiobookDetailView: View {
     var audiobook: Audiobook
-    
+
     @State private var rating = 0
     @State private var comment = ""
     @State private var isAlreadyCompleted = false
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -28,30 +28,30 @@ struct AudiobookDetailView: View {
                         .cornerRadius(10)
                         .shadow(radius: 5)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text(audiobook.name)
                             .font(.headline)
                             .bold()
-                        
+
                         Text("By: " + audiobook.authors.map { $0.name }.joined(separator: ", "))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        
+
                         Text("Narrated by: " + audiobook.narrators.map { $0.name }.joined(separator: ", "))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        
+
                         Text(audiobook.publisher)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        
-                        if let chapters = audiobook.total_chapters {
+
+                        if let chapters = audiobook.totalChapters {
                             Text("\(chapters) Chapters")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-                        
+
                         if !audiobook.edition.isEmpty {
                             Text(audiobook.edition)
                                 .font(.caption)
@@ -60,7 +60,7 @@ struct AudiobookDetailView: View {
                                 .background(Color.accentColor.opacity(0.1))
                                 .cornerRadius(4)
                         }
-                        
+
                         if audiobook.explicit {
                             Image(systemName: "e.square.fill")
                                 .font(.caption)
@@ -69,22 +69,22 @@ struct AudiobookDetailView: View {
                     }
                 }
                 .padding(.horizontal)
-                
+
                 Divider()
-                
+
                 // Log as Completed Section
                 VStack(alignment: .leading, spacing: 15) {
                     Text("Log as Completed")
                         .font(.headline)
-                    
+
                     HStack {
                         Text("Rating:")
                         RatingView(rating: $rating)
                     }
-                    
+
                     TextField("Optional Comment", text: $comment)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
+
                     Button(action: logAsCompleted) {
                         Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
                             .bold()
@@ -100,15 +100,15 @@ struct AudiobookDetailView: View {
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(15)
                 .padding(.horizontal)
-                
+
                 Divider()
-                
+
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Description")
                         .font(.title2)
                         .bold()
                         .padding(.horizontal)
-                    
+
                     Text(audiobook.description)
                         .font(.body)
                         .padding(.horizontal)
@@ -128,7 +128,7 @@ struct AudiobookDetailView: View {
             }
         }
     }
-    
+
     private func logAsCompleted() {
         DatabaseManager.shared.logAudiobookAsCompleted(withId: audiobook.id, rating: rating, comment: comment) { error in
             if let error = error {

@@ -17,7 +17,7 @@ struct CardList: View {
                 let addAction = onAdd.map { addFunc in
                     { addFunc(item) }
                 }
-                
+
                 let deleteAction = onDelete.map { deleteFunc in
                     { deleteFunc(item) }
                 }
@@ -41,7 +41,7 @@ struct CardList: View {
                     }
                     .disabled(isInEditMode)
                     .buttonStyle(PlainButtonStyle())
-                    
+
                     if isInEditMode {
                         switch item.type {
                         case .song:

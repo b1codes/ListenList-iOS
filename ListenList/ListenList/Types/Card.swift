@@ -13,7 +13,7 @@ struct Card: Identifiable {
     var type: CardType
     var input: Media
     var id: String
-    
+
     init(input: CardType, media: Media, id: String) {
         self.type = input
         self.input = media

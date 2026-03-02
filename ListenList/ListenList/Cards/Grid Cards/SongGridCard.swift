@@ -26,7 +26,7 @@ struct SongGridCard: View {
 
     let maxHeight: CGFloat = 270
     let maxWidth: CGFloat = 185
-    
+
     private func artistsToStr() -> String {
         guard let artists = song?.artists, !artists.isEmpty else { return "Unknown Artist" }
         return artists.map { $0.name }.joined(separator: ", ")
@@ -72,7 +72,7 @@ struct SongGridCard: View {
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
                     }
-                    
+
                     Spacer()
 
                     // Song Info
@@ -89,7 +89,7 @@ struct SongGridCard: View {
                         Text(artistsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
-                        
+
                         if let rating = song.rating, song.isCompleted ?? false {
                             HStack(spacing: 2) {
                                 ForEach(1...5, id: \.self) { index in
@@ -100,7 +100,7 @@ struct SongGridCard: View {
                             }
                         }
                     }
-                    
+
                     Spacer()
                     // Add Button
                     if let onAdd = onAdd {
@@ -145,7 +145,7 @@ struct SongGridCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }
@@ -171,16 +171,16 @@ struct SongGridCard: View {
                             ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
                         ],
                         name: "Ordinary (Wedding Version)",
-                        release_date: "2021-01-01",
+                        releaseDate: "2021-01-01",
                         artists: [
                             Artist(id: "1", name: "Alex Warren", artistId: "1")
                         ],
-                        album_type: "single"
+                        albumType: "single"
                     ),
                     artists: [
                         Artist(id: "1", name: "Alex Warren", artistId: "1")
                     ],
-                    duration_ms: 200000,
+                    durationMs: 200000,
                     name: "Ordinary (Wedding Version)",
                     popularity: 100,
                     explicit: false

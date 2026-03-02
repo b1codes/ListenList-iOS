@@ -9,18 +9,18 @@ import SwiftUI
 import Foundation
 
 struct TabUIView: View {
-    
+
     @EnvironmentObject var authManager: AuthManager
     @StateObject private var listManager = ListManager.shared
     @State private var searchText = ""
-    
+
     var body: some View {
         if #available(iOS 26.0, *) {
             TabView {
                 Tab("Home", systemImage: "play.house.fill") {
                     ListenListView()
                 }
-                
+
                 Tab("Completed", systemImage: "checkmark.seal.fill") {
                     CompletedMediaView()
                 }
@@ -28,7 +28,7 @@ struct TabUIView: View {
                 Tab("Settings", systemImage: "gearshape.fill") {
                     SettingsView()
                 }
-                
+
                 if let accessToken = authManager.accessToken, let tokenType = authManager.tokenType {
                     Tab("Search", systemImage: "magnifyingglass", role: .search) {
                         NavigationStack {
@@ -49,7 +49,7 @@ struct TabUIView: View {
                         Image(systemName: "play.house.fill")
                         Text("Home")
                     }
-                
+
                 CompletedMediaView()
                     .tabItem {
                         Image(systemName: "checkmark.seal.fill")

@@ -4,11 +4,11 @@ import SwiftUI
 
 struct PodcastDetailView: View {
     var podcast: Podcast
-    
+
     @State private var rating = 0
     @State private var comment = ""
     @State private var isAlreadyCompleted = false
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -28,21 +28,21 @@ struct PodcastDetailView: View {
                         .cornerRadius(10)
                         .shadow(radius: 5)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 5) {
                         Text(podcast.name)
                             .font(.title3)
                             .bold()
-                        
+
                         Text(podcast.publisher)
                             .font(.headline)
                             .foregroundColor(.secondary)
-                        
+
                         HStack {
-                            Text("\(podcast.total_episodes) Episodes")
+                            Text("\(podcast.totalEpisodes) Episodes")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            
+
                             if podcast.explicit {
                                 Image(systemName: "e.square.fill")
                                     .font(.caption)
@@ -52,22 +52,22 @@ struct PodcastDetailView: View {
                     }
                 }
                 .padding(.horizontal)
-                
+
                 Divider()
-                
+
                 // Log as Completed Section
                 VStack(alignment: .leading, spacing: 15) {
                     Text("Log as Completed")
                         .font(.headline)
-                    
+
                     HStack {
                         Text("Rating:")
                         RatingView(rating: $rating)
                     }
-                    
+
                     TextField("Optional Comment", text: $comment)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
+
                     Button(action: logAsCompleted) {
                         Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
                             .bold()
@@ -83,15 +83,15 @@ struct PodcastDetailView: View {
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(15)
                 .padding(.horizontal)
-                
+
                 Divider()
-                
+
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Description")
                         .font(.title2)
                         .bold()
                         .padding(.horizontal)
-                    
+
                     Text(podcast.description)
                         .font(.body)
                         .padding(.horizontal)
@@ -111,7 +111,7 @@ struct PodcastDetailView: View {
             }
         }
     }
-    
+
     private func logAsCompleted() {
         DatabaseManager.shared.logPodcastAsCompleted(withId: podcast.id, rating: rating, comment: comment) { error in
             if let error = error {

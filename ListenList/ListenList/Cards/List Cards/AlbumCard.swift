@@ -11,7 +11,7 @@ struct AlbumCard: View {
     var isSaved: Bool
 
     let maxHeight: CGFloat = 120
-    
+
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .album(album) = input.input {
@@ -22,12 +22,12 @@ struct AlbumCard: View {
         self.onDelete = onDelete
         self.isSaved = isSaved
     }
-    
+
     private func artistsToStr() -> String {
         guard let artists = album?.artists, !artists.isEmpty else { return "Unknown Artist" }
         return artists.map { $0.name }.joined(separator: ", ")
     }
-    
+
     private var placeholderImage: some View {
         Image(systemName: "photo")
             .resizable()
@@ -35,12 +35,12 @@ struct AlbumCard: View {
             .frame(width: 90, height: 90)
             .cornerRadius(10.0)
     }
-    
+
     var body: some View {
         guard let album = album else {
             return AnyView(EmptyView())
         }
-        
+
         return AnyView(
             ZStack(alignment: .leading) {
                 // MARK: - Layer 1: Foreground Content
@@ -76,7 +76,7 @@ struct AlbumCard: View {
                         Text(artistsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
-                        
+
                         if let rating = album.rating, album.isCompleted ?? false {
                             HStack(spacing: 2) {
                                 ForEach(1...5, id: \.self) { index in
@@ -111,7 +111,7 @@ struct AlbumCard: View {
 
                 // MARK: - Layer 2: Overlays
                 // Rotated Text
-                Text(album.album_type.uppercased().isEmpty ? "ALBUM" : album.album_type.uppercased())
+                Text(album.albumType.uppercased().isEmpty ? "ALBUM" : album.albumType.uppercased())
                     .font(.caption)
                     .fontWeight(.bold)
                     .fixedSize()
@@ -150,7 +150,7 @@ struct AlbumCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }
@@ -174,11 +174,11 @@ struct AlbumCard: View {
                         ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
                     ],
                     name: "Ordinary (Wedding Version)",
-                    release_date: "2021-01-01",
+                    releaseDate: "2021-01-01",
                     artists: [
                         Artist(id: "1", name: "Alex Warren", artistId: "1")
                     ],
-                    album_type: "single"
+                    albumType: "single"
                 )
             )
         )

@@ -43,7 +43,7 @@ struct SettingsView: View {
                             }
 
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(profile.display_name ?? "No Display Name")
+                                Text(profile.displayName ?? "No Display Name")
                                     .font(.headline)
                                 if let email = profile.email {
                                     Text(email)
@@ -90,7 +90,7 @@ struct SettingsView: View {
         }
 
         let apiManager = SpotifyAPIManager(access: accessToken, token: tokenType)
-        
+
         Task {
             do {
                 let profile = try await apiManager.getCurrentUserProfile()

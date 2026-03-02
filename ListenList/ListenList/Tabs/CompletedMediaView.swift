@@ -5,13 +5,13 @@ import SwiftUI
 struct CompletedMediaView: View {
     @EnvironmentObject var listManager: ListManager
     @State private var isGridView = false
-    @State private var filterType: CardType? = nil
-    
+    @State private var filterType: CardType?
+
     var filteredCards: [Card] {
         guard let filterType = filterType else { return listManager.completedCards }
         return listManager.completedCards.filter { $0.type == filterType }
     }
-    
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -58,7 +58,7 @@ struct CompletedMediaView: View {
                             .font(.body.weight(.semibold))
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button(action: { filterType = nil }) {

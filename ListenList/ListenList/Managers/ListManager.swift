@@ -8,81 +8,81 @@ class ListManager: ObservableObject {
     @Published var cards: [Card] = []
     @Published var completedCards: [Card] = []
     @Published var isLoading = false
-    
+
     private var songs: [Song] = []
     private var albums: [Album] = []
     private var artists: [Artist] = []
     private var podcasts: [Podcast] = []
     private var audiobooks: [Audiobook] = []
-    
+
     static let shared = ListManager()
-    
+
     private init() {}
-    
+
     func fetchListenList(forceReload: Bool = false) async {
         if !forceReload && !cards.isEmpty {
             return
         }
-        
+
         if cards.isEmpty {
             isLoading = true
         }
-        
+
         async let fetchedSongs = fetchSongList()
         async let fetchedAlbums = fetchAlbumList()
         async let fetchedArtists = fetchArtistList()
         async let fetchedPodcasts = fetchPodcastList()
         async let fetchedAudiobooks = fetchAudiobookList()
-        
+
         self.songs = await fetchedSongs
         self.albums = await fetchedAlbums
         self.artists = await fetchedArtists
         self.podcasts = await fetchedPodcasts
         self.audiobooks = await fetchedAudiobooks
-        
+
         self.updateUI()
     }
-    
+
     private func fetchSongList() async -> [Song] {
         await withCheckedContinuation { continuation in
             var songIds: [String] = []
-            
+
             DatabaseManager.shared.fetchSongIds { documents, error in
                 if let error = error {
                     print("Error fetching song IDs: \(error.localizedDescription)")
                     continuation.resume(returning: [])
                     return
                 }
-                
+
                 guard let documents = documents else {
                     continuation.resume(returning: [])
                     return
                 }
-                
+
                 songIds = documents.map { $0.documentID }
-                
+
                 if songIds.isEmpty {
                     continuation.resume(returning: [])
                     return
                 }
-                
+
                 var fetchedSongs: [Song] = []
                 let group = DispatchGroup()
-                
+
                 for songId in songIds {
                     group.enter()
                     DatabaseManager.shared.fetchSong(withId: songId) { songDTO, error in
                         defer { group.leave() }
-                        
+
                         if let error = error {
                             print("Error fetching song with ID \(songId): \(error.localizedDescription)")
                             return
                         }
-                        
+
                         guard let songDTO = songDTO else {
                             return
                         }
-                        
+
                         group.enter()
                         SongDTO.toSong(from: songDTO) { song in
                             if let song = song {
@@ -92,7 +92,7 @@ class ListManager: ObservableObject {
                         }
                     }
                 }
-                
+
                 group.notify(queue: .main) {
                     continuation.resume(returning: fetchedSongs)
                 }
@@ -113,7 +113,7 @@ class ListManager: ObservableObject {
                     continuation.resume(returning: [])
                     return
                 }
-                
+
                 if documents.isEmpty {
                     continuation.resume(returning: [])
                     return
@@ -138,7 +138,7 @@ class ListManager: ObservableObject {
             }
         }
     }
-    
+
     private func fetchArtistList() async -> [Artist] {
         await withCheckedContinuation { continuation in
             DatabaseManager.shared.db.collection("artists").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
@@ -147,20 +147,20 @@ class ListManager: ObservableObject {
                     continuation.resume(returning: [])
                     return
                 }
-                
+
                 guard let documents = snapshot?.documents else {
                     continuation.resume(returning: [])
                     return
                 }
-                
+
                 if documents.isEmpty {
                     continuation.resume(returning: [])
                     return
                 }
-                
+
                 var fetchedArtists: [Artist] = []
                 let group = DispatchGroup()
-                
+
                 for document in documents {
                     group.enter()
                     ArtistDTO.toArtist(from: document.reference) { artist in
@@ -170,7 +170,7 @@ class ListManager: ObservableObject {
                         group.leave()
                     }
                 }
-                
+
                 group.notify(queue: .main) {
                     continuation.resume(returning: fetchedArtists)
                 }
@@ -201,11 +201,11 @@ class ListManager: ObservableObject {
                     let images = imagesData.compactMap { ImageDTO.toImageResponse(from: $0) }
                     let explicit = data["explicit"] as? Bool ?? false
                     let description = data["description"] as? String ?? ""
-                    let total_episodes = data["total_episodes"] as? Int ?? 0
+                    let totalEpisodes = data["total_episodes"] as? Int ?? 0
                     let rating = data["rating"] as? Int
                     let comment = data["comment"] as? String
                     let isCompleted = data["isCompleted"] as? Bool ?? false
-                    return Podcast(id: id, name: name, publisher: publisher, images: images, explicit: explicit, description: description, total_episodes: total_episodes, rating: rating, comment: comment, isCompleted: isCompleted)
+                    return Podcast(id: id, name: name, publisher: publisher, images: images, explicit: explicit, description: description, totalEpisodes: totalEpisodes, rating: rating, comment: comment, isCompleted: isCompleted)
                 }
                 continuation.resume(returning: podcasts)
             }
@@ -240,11 +240,11 @@ class ListManager: ObservableObject {
                     let narratorsData = data["narrators"] as? [[String: Any]] ?? []
                     let narrators = narratorsData.compactMap { Narrator(name: $0["name"] as? String ?? "") }
                     let publisher = data["publisher"] as? String ?? ""
-                    let total_chapters = data["total_chapters"] as? Int ?? 0
+                    let totalChapters = data["total_chapters"] as? Int ?? 0
                     let rating = data["rating"] as? Int
                     let comment = data["comment"] as? String
                     let isCompleted = data["isCompleted"] as? Bool ?? false
-                    return Audiobook(id: id, name: name, authors: authors, images: images, explicit: explicit, description: description, edition: edition, narrators: narrators, publisher: publisher, total_chapters: total_chapters, rating: rating, comment: comment, isCompleted: isCompleted)
+                    return Audiobook(id: id, name: name, authors: authors, images: images, explicit: explicit, description: description, edition: edition, narrators: narrators, publisher: publisher, totalChapters: totalChapters, rating: rating, comment: comment, isCompleted: isCompleted)
                 }
                 continuation.resume(returning: audiobooks)
             }
@@ -258,26 +258,26 @@ class ListManager: ObservableObject {
         let podcastCards = self.podcasts.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
         let audiobookCards = self.audiobooks.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
         self.cards = songCards + albumCards + artistCards + podcastCards + audiobookCards
-        
+
         let completedSongCards = self.songs.filter { $0.isCompleted ?? false }.map { createCard(from: $0) }
         let completedAlbumCards = self.albums.filter { $0.isCompleted ?? false }.map { createCard(from: $0) }
         let completedPodcastCards = self.podcasts.filter { $0.isCompleted ?? false }.map { createCard(from: $0) }
         let completedAudiobookCards = self.audiobooks.filter { $0.isCompleted ?? false }.map { createCard(from: $0) }
         self.completedCards = completedSongCards + completedAlbumCards + completedPodcastCards + completedAudiobookCards
-        
+
         self.isLoading = false
     }
-    
+
     private func createCard(from song: Song) -> Card {
         let media = Media(input: .song(song))
         return Card(input: .song, media: media, id: song.id)
     }
-    
+
     private func createCard(from album: Album) -> Card {
         let media = Media(input: .album(album))
         return Card(input: .album, media: media, id: album.id)
     }
-    
+
     private func createCard(from artist: Artist) -> Card {
         let media = Media(input: .artist(artist))
         return Card(input: .artist, media: media, id: artist.id)
@@ -292,12 +292,12 @@ class ListManager: ObservableObject {
         let media = Media(input: .audiobook(audiobook))
         return Card(input: .audiobook, media: media, id: audiobook.id)
     }
-    
+
     func delete(card: Card) {
         // Optimistic delete
         withAnimation {
             cards.removeAll { $0.id == card.id }
-            
+
             // Also remove from the underlying source arrays to keep state consistent
             switch card.type {
             case .song:
@@ -312,7 +312,7 @@ class ListManager: ObservableObject {
                 audiobooks.removeAll { $0.id == card.id }
             }
         }
-        
+
         switch card.type {
         case .song:
             DatabaseManager.shared.deleteSong(withId: card.id) { error in

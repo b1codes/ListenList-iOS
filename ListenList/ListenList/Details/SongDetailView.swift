@@ -4,22 +4,22 @@ import SwiftUI
 
 struct SongDetailView: View {
     var song: Song
-    
+
     @State private var rating = 0
     @State private var comment = ""
     @State private var isAlreadyCompleted = false
-    
+
     private func artistsToStr() -> String {
         return song.artists.map { $0.name }.joined(separator: ", ")
     }
-    
+
     private func durationToStr() -> String {
-        let seconds = song.duration_ms / 1000
+        let seconds = song.durationMs / 1000
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
         return String(format: "%d:%02d", minutes, remainingSeconds)
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .center, spacing: 30) {
@@ -38,25 +38,25 @@ struct SongDetailView: View {
                     .cornerRadius(20)
                     .shadow(radius: 15)
                 }
-                
+
                 VStack(spacing: 10) {
                     Text(song.name)
                         .font(.title)
                         .bold()
                         .multilineTextAlignment(.center)
-                    
+
                     Text(artistsToStr())
                         .font(.title3)
                         .foregroundColor(.secondary)
-                    
+
                     Text(song.album.name)
                         .font(.headline)
                         .foregroundColor(.accentColor)
                 }
                 .padding(.horizontal)
-                
+
                 Divider()
-                
+
                 // Detailed Stats
                 HStack(spacing: 40) {
                     VStack {
@@ -66,7 +66,7 @@ struct SongDetailView: View {
                         Text(durationToStr())
                             .font(.headline)
                     }
-                    
+
                     VStack {
                         Text("Popularity")
                             .font(.caption)
@@ -74,7 +74,7 @@ struct SongDetailView: View {
                         Text("\(song.popularity)%")
                             .font(.headline)
                     }
-                    
+
                     if song.explicit {
                         VStack {
                             Text("Content")
@@ -85,22 +85,22 @@ struct SongDetailView: View {
                         }
                     }
                 }
-                
+
                 Divider()
-                
+
                 // Log as Completed Section
                 VStack(alignment: .leading, spacing: 15) {
                     Text("Log as Completed")
                         .font(.headline)
-                    
+
                     HStack {
                         Text("Rating:")
                         RatingView(rating: $rating)
                     }
-                    
+
                     TextField("Optional Comment", text: $comment)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
+
                     Button(action: logAsCompleted) {
                         Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
                             .bold()
@@ -116,7 +116,7 @@ struct SongDetailView: View {
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(15)
                 .padding(.horizontal)
-                
+
                 Spacer()
             }
             .padding(.top, 20)
@@ -133,7 +133,7 @@ struct SongDetailView: View {
             }
         }
     }
-    
+
     private func logAsCompleted() {
         DatabaseManager.shared.logSongAsCompleted(withId: song.id, rating: rating, comment: comment) { error in
             if let error = error {

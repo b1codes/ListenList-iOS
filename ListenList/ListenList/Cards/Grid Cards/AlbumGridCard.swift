@@ -5,7 +5,6 @@
 //  Created by Brandon Lamer-Connolly on 9/7/25.
 //
 
-
 //
 //  AlbumGridCard.swift
 //  ListenList
@@ -57,7 +56,7 @@ struct AlbumGridCard: View {
                 // MARK: - Layer 1: Foreground Content
                 VStack(spacing: 4) {
                     // "ALBUM" text
-                    Text(album.album_type.uppercased())
+                    Text(album.albumType.uppercased())
                         .font(.caption)
                         .fontWeight(.bold)
                         .opacity(0.8)
@@ -94,7 +93,7 @@ struct AlbumGridCard: View {
                         Text(artistsToStr())
                             .lineLimit(1)
                             .opacity(0.8)
-                        
+
                         if let rating = album.rating, album.isCompleted ?? false {
                             HStack(spacing: 2) {
                                 ForEach(1...5, id: \.self) { index in
@@ -150,7 +149,7 @@ struct AlbumGridCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }
@@ -174,11 +173,11 @@ struct AlbumGridCard: View {
                         ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
                     ],
                     name: "Ordinary (Wedding Version)",
-                    release_date: "2021-01-01",
+                    releaseDate: "2021-01-01",
                     artists: [
                         Artist(id: "1", name: "Alex Warren", artistId: "1")
                     ],
-                    album_type: "single"
+                    albumType: "single"
                 )
             )
         )
@@ -195,11 +194,11 @@ struct AlbumGridCard: View {
                         ImageResponse(url: "https://i.scdn.co/image/ab67616d0000b273916737a69b98e6eff6b43eaa", height: 640, width: 640)
                     ],
                     name: "Ordinary (Wedding Version)",
-                    release_date: "2021-01-01",
+                    releaseDate: "2021-01-01",
                     artists: [
                         Artist(id: "1", name: "Alex Warren", artistId: "1")
                     ],
-                    album_type: "single"
+                    albumType: "single"
                 )
             )
         )

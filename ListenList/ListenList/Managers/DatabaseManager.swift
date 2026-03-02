@@ -33,49 +33,47 @@ class DatabaseManager {
             completion(snapshot?.documents, error)
         }
     }
-    
+
     func fetchAlbumIds(completion: @escaping ([DocumentSnapshot]?, Error?) -> Void) {
         db.collection("albums").getDocuments { snapshot, error in
             completion(snapshot?.documents, error)
         }
     }
-    
+
     func fetchDocumentIds(fromCollection collection: String, completion: @escaping (Set<String>, Error?) -> Void) {
         db.collection(collection).getDocuments { snapshot, error in
             if let error = error {
                 completion([], error)
                 return
             }
-            
+
             guard let documents = snapshot?.documents else {
                 completion([], nil)
                 return
             }
-            
+
             let ids = Set(documents.map { $0.documentID })
             completion(ids, nil)
         }
     }
-    
+
     func fetchArtistIdsInListenList(completion: @escaping (Set<String>, Error?) -> Void) {
         db.collection("artists").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
             if let error = error {
                 completion([], error)
                 return
             }
-            
+
             guard let documents = snapshot?.documents else {
                 completion([], nil)
                 return
             }
-            
+
             let ids = Set(documents.map { $0.documentID })
             completion(ids, nil)
         }
     }
 
-
-    
     func fetchSong(withId songId: String, completion: @escaping (SongDTO?, Error?) -> Void) {
         let songRef = db.collection("songs").document(songId)
         songRef.getDocument { snapshot, error in
@@ -85,24 +83,24 @@ class DatabaseManager {
                 completion(nil, error)
                 return
             }
-            
+
             // Debug log of raw data.
             print("Raw song data for ID \(songId): \(data)")
-            
+
             do {
                 var songDTO = try Firestore.Decoder().decode(SongDTO.self, from: data)
                 // Set the SongDTO's id from the document's snapshot.
                 songDTO.id = snapshot.documentID
-                
+
                 // Optionally fetch the album and artists for debugging purposes.
                 if let albumRef = data["album"] as? DocumentReference {
-                    self.fetchAlbum(from: albumRef) { albumDTO, albumError in
+                    self.fetchAlbum(from: albumRef) { albumDTO, _ in
                         if let albumDTO = albumDTO {
                             print("Fetched album: \(albumDTO)")
                         }
-                        
+
                         if let artistRefs = data["artists"] as? [DocumentReference] {
-                            self.fetchArtists(from: artistRefs) { artists, artistError in
+                            self.fetchArtists(from: artistRefs) { artists, _ in
                                 if let artists = artists {
                                     print("Fetched artists: \(artists)")
                                 }
@@ -114,7 +112,7 @@ class DatabaseManager {
                     }
                 } else {
                     if let artistRefs = data["artists"] as? [DocumentReference] {
-                        self.fetchArtists(from: artistRefs) { artists, artistError in
+                        self.fetchArtists(from: artistRefs) { artists, _ in
                             if let artists = artists {
                                 print("Fetched artists: \(artists)")
                             }
@@ -145,7 +143,7 @@ class DatabaseManager {
             }
         }
     }
-    
+
     // Instead of using Firestore.Decoder(), use the custom static method for mapping.
     func fetchAlbum(from ref: DocumentReference, completion: @escaping (AlbumDTO?, Error?) -> Void) {
         AlbumDTO.toAlbum(from: ref) { albumDTO in
@@ -158,7 +156,7 @@ class DatabaseManager {
             }
         }
     }
-    
+
     func fetchAlbum(withId albumId: String, completion: @escaping (Album?) -> Void) {
         let albumRef = db.collection("albums").document(albumId)
 
@@ -175,20 +173,18 @@ class DatabaseManager {
                     completion(album)
                     return
                 }
-                
+
                 let album = Album(from: albumDTO, artists: artists ?? [])
                 completion(album)
             }
         }
     }
 
-
-    
     // Update fetchArtists to use the custom mapping from ArtistDTO.toArtist
     func fetchArtists(from refs: [DocumentReference], completion: @escaping ([Artist]?, Error?) -> Void) {
         var artists: [Artist] = []
         let group = DispatchGroup()
-        
+
         for ref in refs {
             group.enter()
             ArtistDTO.toArtist(from: ref) { artist in
@@ -200,7 +196,7 @@ class DatabaseManager {
                 group.leave()
             }
         }
-        
+
         group.notify(queue: .main) {
             completion(artists, nil)
         }
@@ -233,7 +229,7 @@ class DatabaseManager {
             completion(images, nil)
         }
     }
-    
+
     // MARK: - Add Functions
 
     func addSong(song: Song, completion: @escaping (Error?) -> Void) {
@@ -243,7 +239,7 @@ class DatabaseManager {
                 print("Error adding album from song: \(error.localizedDescription)")
             }
         }
-        
+
         // Add each artist but mark them as not to be shown on the list
         for artist in song.artists {
             addArtist(artist: artist, showOnList: false) { error in
@@ -252,11 +248,11 @@ class DatabaseManager {
                 }
             }
         }
-        
+
         let songData: [String: Any] = [
             "name": song.name,
             "popularity": song.popularity,
-            "durationMs": song.duration_ms,
+            "durationMs": song.durationMs,
             "isExplicit": song.explicit,
             "album": db.collection("albums").document(song.album.id),
             "artists": song.artists.map { db.collection("artists").document($0.id) }
@@ -273,17 +269,17 @@ class DatabaseManager {
                 }
             }
         }
-        
+
         let albumRef = db.collection("albums").document(album.id)
-        albumRef.getDocument { (document, error) in
+        albumRef.getDocument { (document, _) in
             var albumData: [String: Any] = [
                 "name": album.name,
-                "release_date": album.release_date,
+                "release_date": album.releaseDate,
                 "images": album.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
                 "artists": album.artists.map { self.db.collection("artists").document($0.id) },
-                "album_type": album.album_type
+                "album_type": album.albumType
             ]
-            
+
             if let document = document, document.exists {
                 // Only update showOnList if we're explicitly setting it to true
                 if showOnList {
@@ -293,11 +289,11 @@ class DatabaseManager {
                 // New document, set to the requested value
                 albumData["showOnList"] = showOnList
             }
-            
+
             albumRef.setData(albumData, merge: true, completion: completion)
         }
     }
-    
+
     func addPodcast(podcast: Podcast, completion: @escaping (Error?) -> Void) {
         let podcastData: [String: Any] = [
             "name": podcast.name,
@@ -305,7 +301,7 @@ class DatabaseManager {
             "images": podcast.images.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] },
             "explicit": podcast.explicit,
             "description": podcast.description,
-            "total_episodes": podcast.total_episodes
+            "total_episodes": podcast.totalEpisodes
         ]
         db.collection("podcasts").document(podcast.id).setData(podcastData, completion: completion)
     }
@@ -320,12 +316,11 @@ class DatabaseManager {
             "edition": audiobook.edition,
             "narrators": audiobook.narrators.map { ["name": $0.name] },
             "publisher": audiobook.publisher,
-            "total_chapters": audiobook.total_chapters ?? 0 // Provide default value
+            "total_chapters": audiobook.totalChapters ?? 0 // Provide default value
         ]
         db.collection("audiobooks").document(audiobook.id).setData(audiobookData, completion: completion)
     }
 
-    
     func updateArtistShowOnList(withId artistId: String, showOnList: Bool, completion: @escaping (Error?) -> Void) {
         db.collection("artists").document(artistId).updateData([
             "showOnList": showOnList
@@ -338,16 +333,15 @@ class DatabaseManager {
         ], completion: completion)
     }
 
-
     func addArtist(artist: Artist, showOnList: Bool, completion: @escaping (Error?) -> Void) {
         let artistRef = db.collection("artists").document(artist.id)
-        artistRef.getDocument { (document, error) in
+        artistRef.getDocument { (document, _) in
             var artistData: [String: Any] = [
                 "name": artist.name,
                 "popularity": artist.popularity ?? 0,
                 "images": artist.images?.map { ["url": $0.url, "height": $0.height ?? 0, "width": $0.width ?? 0] } ?? []
             ]
-            
+
             if let document = document, document.exists {
                 // Only update showOnList if we're explicitly setting it to true
                 if showOnList {
@@ -357,7 +351,7 @@ class DatabaseManager {
                 // New document, set to the requested value
                 artistData["showOnList"] = showOnList
             }
-            
+
             artistRef.setData(artistData, merge: true, completion: completion)
         }
     }
@@ -375,7 +369,7 @@ class DatabaseManager {
     func deleteArtist(withId artistId: String, completion: @escaping (Error?) -> Void) {
         db.collection("artists").document(artistId).delete(completion: completion)
     }
-    
+
     func deletePodcast(withId podcastId: String, completion: @escaping (Error?) -> Void) {
         db.collection("podcasts").document(podcastId).delete(completion: completion)
     }

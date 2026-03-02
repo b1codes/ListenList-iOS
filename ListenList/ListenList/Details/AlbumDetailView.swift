@@ -7,11 +7,11 @@ struct AlbumDetailView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var tracks: [TrackItem] = []
     @State private var isLoading = true
-    
+
     @State private var rating = 0
     @State private var comment = ""
     @State private var isAlreadyCompleted = false
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -31,30 +31,30 @@ struct AlbumDetailView: View {
                         .cornerRadius(12)
                         .shadow(radius: 10)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text(album.name)
                             .font(.title)
                             .bold()
-                        
+
                         Text(album.artists.map { $0.name }.joined(separator: ", "))
                             .font(.headline)
                             .foregroundColor(.secondary)
-                        
-                        Text(album.album_type.capitalized)
+
+                        Text(album.albumType.capitalized)
                             .font(.subheadline)
-                        
-                        Text("Released: \(album.release_date)")
+
+                        Text("Released: \(album.releaseDate)")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        
+
                         if let label = album.label {
                             Text(label)
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                                 .italic()
                         }
-                        
+
                         if let genres = album.genres, !genres.isEmpty {
                             Text(genres.joined(separator: ", "))
                                 .font(.caption2)
@@ -62,7 +62,7 @@ struct AlbumDetailView: View {
                                 .background(Color.secondary.opacity(0.1))
                                 .cornerRadius(4)
                         }
-                        
+
                         if album.isExplicit ?? false {
                             Label("Explicit", systemImage: "e.square.fill")
                                 .font(.caption)
@@ -71,22 +71,22 @@ struct AlbumDetailView: View {
                     }
                 }
                 .padding()
-                
+
                 Divider()
-                
+
                 // Log as Completed Section
                 VStack(alignment: .leading, spacing: 15) {
                     Text("Log as Completed")
                         .font(.headline)
-                    
+
                     HStack {
                         Text("Rating:")
                         RatingView(rating: $rating)
                     }
-                    
+
                     TextField("Optional Comment", text: $comment)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
+
                     Button(action: logAsCompleted) {
                         Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
                             .bold()
@@ -102,16 +102,16 @@ struct AlbumDetailView: View {
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(15)
                 .padding(.horizontal)
-                
+
                 Divider()
-                
+
                 // Track List
                 VStack(alignment: .leading) {
                     Text("Tracks")
                         .font(.title2)
                         .bold()
                         .padding(.horizontal)
-                    
+
                     if isLoading {
                         ProgressView("Loading tracks...")
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -125,12 +125,12 @@ struct AlbumDetailView: View {
                                 Text("\(index + 1)")
                                     .foregroundColor(.secondary)
                                     .frame(width: 20)
-                                
-                                Text(track.name ?? "Unknown Track") 
+
+                                Text(track.name ?? "Unknown Track")
                                     .font(.body)
-                                
+
                                 Spacer()
-                                
+
                                 if track.explicit {
                                     Image(systemName: "e.square.fill")
                                         .foregroundColor(.secondary)
@@ -156,11 +156,11 @@ struct AlbumDetailView: View {
             }
         }
     }
-    
+
     private func fetchTracks() {
         guard let accessToken = authManager.accessToken, let tokenType = authManager.tokenType else { return }
         let spotifyManager = SpotifyAPIManager(access: accessToken, token: tokenType)
-        
+
         Task {
             do {
                 if let response = try await spotifyManager.getAlbumTracks(albumId: album.id) {
@@ -173,7 +173,7 @@ struct AlbumDetailView: View {
             }
         }
     }
-    
+
     private func logAsCompleted() {
         DatabaseManager.shared.logAlbumAsCompleted(withId: album.id, rating: rating, comment: comment) { error in
             if let error = error {

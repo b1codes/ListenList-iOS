@@ -5,7 +5,6 @@
 //  Created by Brandon Lamer-Connolly on 9/7/25.
 //
 
-
 //
 //  ArtistGridCard.swift
 //  ListenList
@@ -127,7 +126,7 @@ struct ArtistGridCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }

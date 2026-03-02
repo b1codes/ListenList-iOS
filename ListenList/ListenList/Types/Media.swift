@@ -9,10 +9,6 @@ import Foundation
 
 struct Media {
     var input: MediaType
-    
-    init(input: MediaType) {
-        self.input = input
-    }
 }
 
 // Enum to represent different media types

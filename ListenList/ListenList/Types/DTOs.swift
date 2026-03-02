@@ -33,13 +33,13 @@ struct ArtistDTO: Codable {
             let name = data["name"] as? String ?? ""
             let popularity = data["popularity"] as? Int ?? 0
             let showOnList = data["showOnList"] as? Bool ?? false
-            
+
             // Attempt to read images as an array of dictionaries.
             let imagesData = data["images"] as? [[String: Any]] ?? []
             let images = imagesData.compactMap { imageDict -> ImageResponse? in
                 return ImageDTO.toImageResponse(from: imageDict)
             }
-            
+
             let artist = Artist(
                 id: id,
                 images: images,
@@ -52,7 +52,6 @@ struct ArtistDTO: Codable {
         }
     }
 }
-
 
 // MARK: - AlbumDTO
 
@@ -81,7 +80,7 @@ struct AlbumDTO: Codable {
                 completion(nil)
                 return
             }
-            
+
             let id = ref.documentID
             let name = data["name"] as? String ?? ""
             let releaseDate = data["release_date"] as? String ?? ""
@@ -91,7 +90,7 @@ struct AlbumDTO: Codable {
             let rating = data["rating"] as? Int
             let comment = data["comment"] as? String
             let isCompleted = data["isCompleted"] as? Bool ?? false
-            
+
             // Correctly get the artist document references
             let artistRefs = data["artists"] as? [DocumentReference] ?? []
 
@@ -102,7 +101,7 @@ struct AlbumDTO: Codable {
             } else if let imageRefs = data["images"] as? [DocumentReference] {
                 var fetchedImages: [ImageResponse] = []
                 let group = DispatchGroup()
-                
+
                 for imageRef in imageRefs {
                     group.enter()
                     ImageDTO.toImageResponse(from: imageRef) { image in
@@ -112,7 +111,7 @@ struct AlbumDTO: Codable {
                         group.leave()
                     }
                 }
-                
+
                 group.notify(queue: .main) {
                     let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: fetchedImages, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
                     completion(albumDTO)
@@ -139,11 +138,11 @@ struct SongDTO: Codable {
     var rating: Int?
     var comment: String?
     var isCompleted: Bool?
-    
+
     enum CodingKeys: String, CodingKey {
         case name, popularity, durationMs, isExplicit, album, artists, rating, comment, isCompleted
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = try container.decode(String.self, forKey: .name)
@@ -162,14 +161,14 @@ struct SongDTO: Codable {
         comment = try? container.decode(String.self, forKey: .comment)
         isCompleted = (try? container.decode(Bool.self, forKey: .isCompleted)) ?? false
     }
-    
+
     static func toSong(from dto: SongDTO, completion: @escaping (Song?) -> Void) {
         guard let albumRef = dto.album else {
             print("Album reference is missing")
             completion(nil)
             return
         }
-        
+
         // Fetch the album using our custom mapping.
         AlbumDTO.toAlbum(from: albumRef) { albumDTO in
             guard let albumDTO = albumDTO else {
@@ -177,7 +176,7 @@ struct SongDTO: Codable {
                 completion(nil)
                 return
             }
-            
+
             var artists: [Artist] = []
             let group = DispatchGroup()
             for artistRef in dto.artists {
@@ -196,15 +195,15 @@ struct SongDTO: Codable {
                         id: albumDTO.id,
                         images: albumDTO.images, // Now we include fetched images.
                         name: albumDTO.name,
-                        release_date: albumDTO.releaseDate,
+                        releaseDate: albumDTO.releaseDate,
                         artists: [],
-                        album_type: albumDTO.albumType, // Fetch album artists if required.
+                        albumType: albumDTO.albumType, // Fetch album artists if required.
                         rating: albumDTO.rating,
                         comment: albumDTO.comment,
                         isCompleted: albumDTO.isCompleted
                     ),
                     artists: artists,
-                    duration_ms: dto.durationMs,
+                    durationMs: dto.durationMs,
                     name: dto.name,
                     popularity: dto.popularity,
                     explicit: dto.isExplicit,
@@ -224,7 +223,7 @@ struct ImageDTO: Codable {
     let height: Int
     let width: Int
     let url: String
-    
+
     static func toImageResponse(from ref: DocumentReference, completion: @escaping (ImageResponse?) -> Void) {
         ref.getDocument { (document, error) in
             if let error = error {
@@ -244,7 +243,7 @@ struct ImageDTO: Codable {
             completion(imageResponse)
         }
     }
-    
+
     static func toImageResponse(from dict: [String: Any]) -> ImageResponse? {
         guard let url = dict["url"] as? String else { return nil }
         let height = dict["height"] as? Int

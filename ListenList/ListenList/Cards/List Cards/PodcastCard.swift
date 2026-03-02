@@ -11,7 +11,7 @@ struct PodcastCard: View {
     var isSaved: Bool
 
     let maxHeight: CGFloat = 120
-    
+
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
         if case let .podcast(podcast) = input.input {
@@ -22,7 +22,7 @@ struct PodcastCard: View {
         self.onDelete = onDelete
         self.isSaved = isSaved
     }
-    
+
     private var placeholderImage: some View {
         Image(systemName: "mic.fill")
             .resizable()
@@ -30,12 +30,12 @@ struct PodcastCard: View {
             .frame(width: 90, height: 90)
             .cornerRadius(10.0)
     }
-    
+
     var body: some View {
         guard let podcast = podcast else {
             return AnyView(EmptyView())
         }
-        
+
         return AnyView(
             ZStack(alignment: .leading) {
                 // MARK: - Layer 1: Foreground Content
@@ -71,7 +71,7 @@ struct PodcastCard: View {
                         Text(podcast.publisher)
                             .lineLimit(1)
                             .opacity(0.8)
-                        
+
                         if let rating = podcast.rating, podcast.isCompleted ?? false {
                             HStack(spacing: 2) {
                                 ForEach(1...5, id: \.self) { index in
@@ -145,7 +145,7 @@ struct PodcastCard: View {
                     } else {
                         Color.gray
                     }
-                    
+
                     RoundedRectangle(cornerRadius: 15.0)
                         .foregroundColor(.gray.opacity(0.7))
                 }
@@ -172,7 +172,7 @@ struct PodcastCard: View {
                     ],
                     explicit: false,
                     description: "This is what the news should sound like. The biggest stories of our time, told by the best journalists in the world. Hosted by Michael Barbaro and Sabrina Tavernise. Twenty minutes a day, five days a week, ready by 6 a.m.",
-                    total_episodes: 1500
+                    totalEpisodes: 1500
                 )
             )
         )

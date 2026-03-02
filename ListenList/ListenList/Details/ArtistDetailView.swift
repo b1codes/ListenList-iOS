@@ -4,7 +4,7 @@ import SwiftUI
 
 struct ArtistDetailView: View {
     var artist: Artist
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .center, spacing: 30) {
@@ -29,13 +29,13 @@ struct ArtistDetailView: View {
                         .frame(width: 200, height: 200)
                         .foregroundColor(.secondary)
                 }
-                
+
                 VStack(spacing: 10) {
                     Text(artist.name)
                         .font(.largeTitle)
                         .bold()
                         .multilineTextAlignment(.center)
-                    
+
                     if let popularity = artist.popularity {
                         HStack {
                             Text("Popularity:")
@@ -53,22 +53,22 @@ struct ArtistDetailView: View {
                     }
                 }
                 .padding(.horizontal)
-                
+
                 Divider()
-                
+
                 // Placeholder for Top Tracks or Albums could go here
                 VStack(alignment: .leading, spacing: 10) {
                     Text("About")
                         .font(.title2)
                         .bold()
                         .padding(.horizontal)
-                    
+
                     Text("\(artist.name) is a Spotify artist. This view could be expanded to show top tracks, albums, or related artists from the Spotify API.")
                         .font(.body)
                         .padding(.horizontal)
                         .foregroundColor(.secondary)
                 }
-                
+
                 Spacer()
             }
             .padding(.top, 20)
