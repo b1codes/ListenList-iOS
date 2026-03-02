@@ -87,3 +87,12 @@ The project follows a modular manager-based architecture:
 - **Config.xcconfig**: Contains Spotify credentials.
 - **GoogleService-Info.plist**: Required for Firebase initialization.
 - **Keychain**: Used by `AuthManager` to persist `accessToken` and `refreshToken` securely.
+
+## Gemini Configuration
+
+The project includes specialized Gemini CLI configuration and skills located in the `.gemini/` directory:
+- **`skills/`**: Active Gemini skills for various development tasks.
+- **`packaged_skills/`**: Pre-packaged skill files for distribution.
+- **`skills-source/`**: Source code and resources for custom skills.
+- **`settings.json`**: Project-specific Gemini CLI settings.
+
