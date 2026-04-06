@@ -422,3 +422,152 @@ class DatabaseManager {
             }
     }
 }
+
+// MARK: - DatabaseService conformance
+
+extension DatabaseManager: DatabaseService {
+
+    func fetchSongs(completion: @escaping ([Song]) -> Void) {
+        fetchSongIds { documents, error in
+            guard let documents = documents, error == nil, !documents.isEmpty else {
+                completion([])
+                return
+            }
+
+            let songIds = documents.map { $0.documentID }
+            var fetchedSongs: [Song] = []
+            let group = DispatchGroup()
+
+            for songId in songIds {
+                group.enter()
+                self.fetchSong(withId: songId) { songDTO, error in
+                    defer { group.leave() }
+                    guard let songDTO = songDTO, error == nil else { return }
+                    group.enter()
+                    SongDTO.toSong(from: songDTO) { song in
+                        if let song = song { fetchedSongs.append(song) }
+                        group.leave()
+                    }
+                }
+            }
+
+            group.notify(queue: .main) { completion(fetchedSongs) }
+        }
+    }
+
+    func fetchAlbums(completion: @escaping ([Album]) -> Void) {
+        db.collection("albums").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
+            guard let documents = snapshot?.documents, error == nil, !documents.isEmpty else {
+                completion([])
+                return
+            }
+
+            var fetchedAlbums: [Album] = []
+            let group = DispatchGroup()
+
+            for document in documents {
+                group.enter()
+                self.fetchAlbum(withId: document.documentID) { album in
+                    if let album = album { fetchedAlbums.append(album) }
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: .main) { completion(fetchedAlbums) }
+        }
+    }
+
+    func fetchArtists(completion: @escaping ([Artist]) -> Void) {
+        db.collection("artists").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
+            guard let documents = snapshot?.documents, error == nil, !documents.isEmpty else {
+                completion([])
+                return
+            }
+
+            var fetchedArtists: [Artist] = []
+            let group = DispatchGroup()
+
+            for document in documents {
+                group.enter()
+                ArtistDTO.toArtist(from: document.reference) { artist in
+                    if let artist = artist { fetchedArtists.append(artist) }
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: .main) { completion(fetchedArtists) }
+        }
+    }
+
+    func fetchPodcasts(completion: @escaping ([Podcast]) -> Void) {
+        db.collection("podcasts").getDocuments { snapshot, error in
+            guard let documents = snapshot?.documents, error == nil else {
+                completion([])
+                return
+            }
+
+            let podcasts = documents.compactMap { doc -> Podcast? in
+                let data = doc.data()
+                let id = doc.documentID
+                let name = data["name"] as? String ?? ""
+                let publisher = data["publisher"] as? String ?? ""
+                let imagesData = data["images"] as? [[String: Any]] ?? []
+                let images = imagesData.compactMap { ImageDTO.toImageResponse(from: $0) }
+                let explicit = data["explicit"] as? Bool ?? false
+                let description = data["description"] as? String ?? ""
+                let totalEpisodes = data["total_episodes"] as? Int ?? 0
+                let rating = data["rating"] as? Int
+                let comment = data["comment"] as? String
+                let isCompleted = data["isCompleted"] as? Bool ?? false
+                return Podcast(id: id, name: name, publisher: publisher, images: images,
+                               explicit: explicit, description: description,
+                               totalEpisodes: totalEpisodes, rating: rating,
+                               comment: comment, isCompleted: isCompleted)
+            }
+            completion(podcasts)
+        }
+    }
+
+    func fetchAudiobooks(completion: @escaping ([Audiobook]) -> Void) {
+        db.collection("audiobooks").getDocuments { snapshot, error in
+            guard let documents = snapshot?.documents, error == nil else {
+                completion([])
+                return
+            }
+
+            let audiobooks = documents.compactMap { doc -> Audiobook? in
+                let data = doc.data()
+                let id = doc.documentID
+                let name = data["name"] as? String ?? ""
+                let authorsData = data["authors"] as? [[String: Any]] ?? []
+                let authors = authorsData.compactMap { Author(name: $0["name"] as? String ?? "") }
+                let imagesData = data["images"] as? [[String: Any]] ?? []
+                let images = imagesData.compactMap { ImageDTO.toImageResponse(from: $0) }
+                let explicit = data["explicit"] as? Bool ?? false
+                let description = data["description"] as? String ?? ""
+                let edition = data["edition"] as? String ?? ""
+                let narratorsData = data["narrators"] as? [[String: Any]] ?? []
+                let narrators = narratorsData.compactMap { Narrator(name: $0["name"] as? String ?? "") }
+                let publisher = data["publisher"] as? String ?? ""
+                let totalChapters = data["total_chapters"] as? Int
+                let rating = data["rating"] as? Int
+                let comment = data["comment"] as? String
+                let isCompleted = data["isCompleted"] as? Bool ?? false
+                return Audiobook(id: id, name: name, authors: authors, images: images,
+                                 explicit: explicit, description: description, edition: edition,
+                                 narrators: narrators, publisher: publisher,
+                                 totalChapters: totalChapters, rating: rating,
+                                 comment: comment, isCompleted: isCompleted)
+            }
+            completion(audiobooks)
+        }
+    }
+
+    func removeAlbumFromList(withId id: String, completion: @escaping (Error?) -> Void) {
+        updateAlbumShowOnList(withId: id, showOnList: false, completion: completion)
+    }
+
+    func removeArtistFromList(withId id: String, completion: @escaping (Error?) -> Void) {
+        updateArtistShowOnList(withId: id, showOnList: false, completion: completion)
+    }
+}
