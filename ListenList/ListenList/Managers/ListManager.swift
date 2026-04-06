@@ -1,7 +1,6 @@
 // ListenList/ListenList/Managers/ListManager.swift
 
 import SwiftUI
-import FirebaseFirestore
 
 @MainActor
 class ListManager: ObservableObject {
@@ -15,9 +14,13 @@ class ListManager: ObservableObject {
     private var podcasts: [Podcast] = []
     private var audiobooks: [Audiobook] = []
 
+    let db: DatabaseService
+
     static let shared = ListManager()
 
-    private init() {}
+    init(db: DatabaseService = DatabaseManager.shared) {
+        self.db = db
+    }
 
     func fetchListenList(forceReload: Bool = false) async {
         if !forceReload && !cards.isEmpty {
@@ -45,168 +48,31 @@ class ListManager: ObservableObject {
 
     private func fetchSongList() async -> [Song] {
         await withCheckedContinuation { continuation in
-            var songIds: [String] = []
-
-            DatabaseManager.shared.fetchSongIds { documents, error in
-                if let error = error {
-                    print("Error fetching song IDs: \(error.localizedDescription)")
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                guard let documents = documents else {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                songIds = documents.map { $0.documentID }
-
-                if songIds.isEmpty {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                var fetchedSongs: [Song] = []
-                let group = DispatchGroup()
-
-                for songId in songIds {
-                    group.enter()
-                    DatabaseManager.shared.fetchSong(withId: songId) { songDTO, error in
-                        defer { group.leave() }
-
-                        if let error = error {
-                            print("Error fetching song with ID \(songId): \(error.localizedDescription)")
-                            return
-                        }
-
-                        guard let songDTO = songDTO else {
-                            return
-                        }
-
-                        group.enter()
-                        SongDTO.toSong(from: songDTO) { song in
-                            if let song = song {
-                                fetchedSongs.append(song)
-                            }
-                            group.leave()
-                        }
-                    }
-                }
-
-                group.notify(queue: .main) {
-                    continuation.resume(returning: fetchedSongs)
-                }
+            db.fetchSongs { songs in
+                continuation.resume(returning: songs)
             }
         }
     }
 
     private func fetchAlbumList() async -> [Album] {
         await withCheckedContinuation { continuation in
-            DatabaseManager.shared.db.collection("albums").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
-                if let error = error {
-                    print("Error fetching albums: \(error.localizedDescription)")
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                guard let documents = snapshot?.documents else {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                if documents.isEmpty {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                var fetchedAlbums: [Album] = []
-                let group = DispatchGroup()
-
-                for document in documents {
-                    group.enter()
-                    DatabaseManager.shared.fetchAlbum(withId: document.documentID) { album in
-                        if let album = album {
-                            fetchedAlbums.append(album)
-                        }
-                        group.leave()
-                    }
-                }
-
-                group.notify(queue: .main) {
-                    continuation.resume(returning: fetchedAlbums)
-                }
+            db.fetchAlbums { albums in
+                continuation.resume(returning: albums)
             }
         }
     }
 
     private func fetchArtistList() async -> [Artist] {
         await withCheckedContinuation { continuation in
-            DatabaseManager.shared.db.collection("artists").whereField("showOnList", isEqualTo: true).getDocuments { snapshot, error in
-                if let error = error {
-                    print("Error fetching artists: \(error.localizedDescription)")
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                guard let documents = snapshot?.documents else {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                if documents.isEmpty {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                var fetchedArtists: [Artist] = []
-                let group = DispatchGroup()
-
-                for document in documents {
-                    group.enter()
-                    ArtistDTO.toArtist(from: document.reference) { artist in
-                        if let artist = artist {
-                            fetchedArtists.append(artist)
-                        }
-                        group.leave()
-                    }
-                }
-
-                group.notify(queue: .main) {
-                    continuation.resume(returning: fetchedArtists)
-                }
+            db.fetchArtists { artists in
+                continuation.resume(returning: artists)
             }
         }
     }
 
     private func fetchPodcastList() async -> [Podcast] {
         await withCheckedContinuation { continuation in
-            DatabaseManager.shared.db.collection("podcasts").getDocuments { snapshot, error in
-                if let error = error {
-                    print("Error fetching podcasts: \(error.localizedDescription)")
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                guard let documents = snapshot?.documents else {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                let podcasts = documents.compactMap { doc -> Podcast? in
-                    let data = doc.data()
-                    let id = doc.documentID
-                    let name = data["name"] as? String ?? ""
-                    let publisher = data["publisher"] as? String ?? ""
-                    let imagesData = data["images"] as? [[String: Any]] ?? []
-                    let images = imagesData.compactMap { ImageDTO.toImageResponse(from: $0) }
-                    let explicit = data["explicit"] as? Bool ?? false
-                    let description = data["description"] as? String ?? ""
-                    let totalEpisodes = data["total_episodes"] as? Int ?? 0
-                    let rating = data["rating"] as? Int
-                    let comment = data["comment"] as? String
-                    let isCompleted = data["isCompleted"] as? Bool ?? false
-                    return Podcast(id: id, name: name, publisher: publisher, images: images, explicit: explicit, description: description, totalEpisodes: totalEpisodes, rating: rating, comment: comment, isCompleted: isCompleted)
-                }
+            db.fetchPodcasts { podcasts in
                 continuation.resume(returning: podcasts)
             }
         }
@@ -214,38 +80,7 @@ class ListManager: ObservableObject {
 
     private func fetchAudiobookList() async -> [Audiobook] {
         await withCheckedContinuation { continuation in
-            DatabaseManager.shared.db.collection("audiobooks").getDocuments { snapshot, error in
-                if let error = error {
-                    print("Error fetching audiobooks: \(error.localizedDescription)")
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                guard let documents = snapshot?.documents else {
-                    continuation.resume(returning: [])
-                    return
-                }
-
-                let audiobooks = documents.compactMap { doc -> Audiobook? in
-                    let data = doc.data()
-                    let id = doc.documentID
-                    let name = data["name"] as? String ?? ""
-                    let authorsData = data["authors"] as? [[String: Any]] ?? []
-                    let authors = authorsData.compactMap { Author(name: $0["name"] as? String ?? "") }
-                    let imagesData = data["images"] as? [[String: Any]] ?? []
-                    let images = imagesData.compactMap { ImageDTO.toImageResponse(from: $0) }
-                    let explicit = data["explicit"] as? Bool ?? false
-                    let description = data["description"] as? String ?? ""
-                    let edition = data["edition"] as? String ?? ""
-                    let narratorsData = data["narrators"] as? [[String: Any]] ?? []
-                    let narrators = narratorsData.compactMap { Narrator(name: $0["name"] as? String ?? "") }
-                    let publisher = data["publisher"] as? String ?? ""
-                    let totalChapters = data["total_chapters"] as? Int ?? 0
-                    let rating = data["rating"] as? Int
-                    let comment = data["comment"] as? String
-                    let isCompleted = data["isCompleted"] as? Bool ?? false
-                    return Audiobook(id: id, name: name, authors: authors, images: images, explicit: explicit, description: description, edition: edition, narrators: narrators, publisher: publisher, totalChapters: totalChapters, rating: rating, comment: comment, isCompleted: isCompleted)
-                }
+            db.fetchAudiobooks { audiobooks in
                 continuation.resume(returning: audiobooks)
             }
         }
@@ -254,7 +89,7 @@ class ListManager: ObservableObject {
     private func updateUI() {
         let songCards = self.songs.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
         let albumCards = self.albums.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
-        let artistCards = self.artists.map { createCard(from: $0) } // Artists don't have isCompleted for now
+        let artistCards = self.artists.map { createCard(from: $0) }
         let podcastCards = self.podcasts.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
         let audiobookCards = self.audiobooks.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
         self.cards = songCards + albumCards + artistCards + podcastCards + audiobookCards
@@ -269,81 +104,71 @@ class ListManager: ObservableObject {
     }
 
     private func createCard(from song: Song) -> Card {
-        let media = Media(input: .song(song))
-        return Card(input: .song, media: media, id: song.id)
+        Card(input: .song, media: Media(input: .song(song)), id: song.id)
     }
 
     private func createCard(from album: Album) -> Card {
-        let media = Media(input: .album(album))
-        return Card(input: .album, media: media, id: album.id)
+        Card(input: .album, media: Media(input: .album(album)), id: album.id)
     }
 
     private func createCard(from artist: Artist) -> Card {
-        let media = Media(input: .artist(artist))
-        return Card(input: .artist, media: media, id: artist.id)
+        Card(input: .artist, media: Media(input: .artist(artist)), id: artist.id)
     }
 
     private func createCard(from podcast: Podcast) -> Card {
-        let media = Media(input: .podcast(podcast))
-        return Card(input: .podcast, media: media, id: podcast.id)
+        Card(input: .podcast, media: Media(input: .podcast(podcast)), id: podcast.id)
     }
 
     private func createCard(from audiobook: Audiobook) -> Card {
-        let media = Media(input: .audiobook(audiobook))
-        return Card(input: .audiobook, media: media, id: audiobook.id)
+        Card(input: .audiobook, media: Media(input: .audiobook(audiobook)), id: audiobook.id)
     }
 
     func delete(card: Card) {
-        // Optimistic delete
+        // Optimistic delete: remove immediately from UI, roll back on error
         withAnimation {
             cards.removeAll { $0.id == card.id }
+            completedCards.removeAll { $0.id == card.id }
 
-            // Also remove from the underlying source arrays to keep state consistent
             switch card.type {
-            case .song:
-                songs.removeAll { $0.id == card.id }
-            case .album:
-                albums.removeAll { $0.id == card.id }
-            case .artist:
-                artists.removeAll { $0.id == card.id }
-            case .podcast:
-                podcasts.removeAll { $0.id == card.id }
-            case .audiobook:
-                audiobooks.removeAll { $0.id == card.id }
+            case .song:      songs.removeAll { $0.id == card.id }
+            case .album:     albums.removeAll { $0.id == card.id }
+            case .artist:    artists.removeAll { $0.id == card.id }
+            case .podcast:   podcasts.removeAll { $0.id == card.id }
+            case .audiobook: audiobooks.removeAll { $0.id == card.id }
             }
         }
 
         switch card.type {
         case .song:
-            DatabaseManager.shared.deleteSong(withId: card.id) { error in
+            db.deleteSong(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting song: \(error.localizedDescription)")
                     Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         case .album:
-            DatabaseManager.shared.updateAlbumShowOnList(withId: card.id, showOnList: false) { error in
+            db.removeAlbumFromList(withId: card.id) { error in
                 if let error = error {
                     print("Error updating album: \(error.localizedDescription)")
                     Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         case .artist:
-            DatabaseManager.shared.updateArtistShowOnList(withId: card.id, showOnList: false) { error in
+            db.removeArtistFromList(withId: card.id) { error in
                 if let error = error {
                     print("Error updating artist: \(error.localizedDescription)")
                     Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         case .podcast:
-            DatabaseManager.shared.deletePodcast(withId: card.id) { error in
+            db.deletePodcast(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting podcast: \(error.localizedDescription)")
                     Task { @MainActor in await self.fetchListenList(forceReload: true) }
                 }
             }
         case .audiobook:
-            DatabaseManager.shared.deleteAudiobook(withId: card.id) { error in
+            db.deleteAudiobook(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting audiobook: \(error.localizedDescription)")
                     Task { @MainActor in await self.fetchListenList(forceReload: true) }
