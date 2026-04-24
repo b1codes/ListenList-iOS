@@ -157,4 +157,61 @@ class SpotifyAPIManager: ObservableObject {
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         return try decoder.decode(SongSearchResponse.self, from: data)
     }
+
+    func getArtistTopTracks(artistId: String) async throws -> ArtistTopTracksResponse? {
+        let urlStr = "https://api.spotify.com/v1/artists/\(artistId)/top-tracks?market=US"
+        let requestHeaders: [String: String] = ["Authorization": "\(tokenType) \(accessToken)"]
+
+        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.allHTTPHeaderFields = requestHeaders
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(ArtistTopTracksResponse.self, from: data)
+    }
+
+    func getTrack(id: String) async throws -> SongResponse? {
+        let urlStr = "https://api.spotify.com/v1/tracks/\(id)"
+        let requestHeaders: [String: String] = ["Authorization": "\(tokenType) \(accessToken)"]
+
+        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.allHTTPHeaderFields = requestHeaders
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(SongResponse.self, from: data)
+    }
+
+    func getArtistAlbums(artistId: String) async throws -> AlbumSearchResponse? {
+        let urlStr = "https://api.spotify.com/v1/artists/\(artistId)/albums?limit=20&market=US"
+        let requestHeaders: [String: String] = ["Authorization": "\(tokenType) \(accessToken)"]
+
+        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.allHTTPHeaderFields = requestHeaders
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(AlbumSearchResponse.self, from: data)
+    }
 }

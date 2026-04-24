@@ -86,6 +86,45 @@ class ListManager: ObservableObject {
         }
     }
 
+    func isItemInList(id: String) -> Bool {
+        return cards.contains { $0.id == id } || completedCards.contains { $0.id == id }
+    }
+
+    func add(media: Media) {
+        switch media.input {
+        case .song(let song):
+            db.addSong(song: song) { [weak self] error in
+                self?.handleAddResult(error: error)
+            }
+        case .album(let album):
+            db.addAlbum(album: album, showOnList: true) { [weak self] error in
+                self?.handleAddResult(error: error)
+            }
+        case .artist(let artist):
+            db.addArtist(artist: artist, showOnList: true) { [weak self] error in
+                self?.handleAddResult(error: error)
+            }
+        case .podcast(let podcast):
+            db.addPodcast(podcast: podcast) { [weak self] error in
+                self?.handleAddResult(error: error)
+            }
+        case .audiobook(let audiobook):
+            db.addAudiobook(audiobook: audiobook) { [weak self] error in
+                self?.handleAddResult(error: error)
+            }
+        }
+    }
+
+    private func handleAddResult(error: Error?) {
+        if let error = error {
+            print("Error adding item: \(error.localizedDescription)")
+        } else {
+            Task { @MainActor in
+                await self.fetchListenList(forceReload: true)
+            }
+        }
+    }
+
     private func updateUI() {
         let songCards = self.songs.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }
         let albumCards = self.albums.filter { !($0.isCompleted ?? false) }.map { createCard(from: $0) }

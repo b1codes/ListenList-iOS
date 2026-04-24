@@ -5,6 +5,7 @@ import SwiftUI
 struct AlbumDetailView: View {
     var album: Album
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var listManager: ListManager
     @State private var tracks: [TrackItem] = []
     @State private var isLoading = true
 
@@ -74,21 +75,11 @@ struct AlbumDetailView: View {
 
                 Divider()
 
-                // Log as Completed Section
-                VStack(alignment: .leading, spacing: 15) {
-                    Text("Log as Completed")
-                        .font(.headline)
-
-                    HStack {
-                        Text("Rating:")
-                        RatingView(rating: $rating)
-                    }
-
-                    TextField("Optional Comment", text: $comment)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-
-                    Button(action: logAsCompleted) {
-                        Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
+                if !listManager.isItemInList(id: album.id) {
+                    Button(action: {
+                        listManager.add(media: Media(input: .album(album)))
+                    }) {
+                        Label("Add to Library", systemImage: "plus.circle")
                             .bold()
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -96,12 +87,17 @@ struct AlbumDetailView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
-                    .padding(.top, 10)
+                    .padding(.horizontal)
+                    
+                    Divider()
                 }
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(15)
-                .padding(.horizontal)
+
+                MediaLoggingView(
+                    rating: $rating,
+                    comment: $comment,
+                    isAlreadyCompleted: isAlreadyCompleted,
+                    action: logAsCompleted
+                )
 
                 Divider()
 
@@ -121,23 +117,35 @@ struct AlbumDetailView: View {
                             .padding()
                     } else {
                         ForEach(Array(tracks.enumerated()), id: \.offset) { index, track in
-                            HStack {
-                                Text("\(index + 1)")
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 20)
-
-                                Text(track.name ?? "Unknown Track")
-                                    .font(.body)
-
-                                Spacer()
-
-                                if track.explicit {
-                                    Image(systemName: "e.square.fill")
+                            let song = Song(
+                                id: track.id,
+                                album: album,
+                                artists: track.artists.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) },
+                                durationMs: track.durationMs,
+                                name: track.name,
+                                popularity: 0,
+                                explicit: track.explicit
+                            )
+                            NavigationLink(destination: SongDetailView(song: song)) {
+                                HStack {
+                                    Text("\(index + 1)")
                                         .foregroundColor(.secondary)
+                                        .frame(width: 20)
+
+                                    Text(track.name)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+
+                                    Spacer()
+
+                                    if track.explicit {
+                                        Image(systemName: "e.square.fill")
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
                             }
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
                         }
                     }
                 }

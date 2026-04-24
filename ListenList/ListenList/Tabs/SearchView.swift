@@ -17,7 +17,6 @@ struct SearchView: View {
     @State private var isLoading = false
     @State private var isLoadingSuggestions = false
     @State private var currentSearchTask: Task<Void, Never>?
-    @State private var listenListIDs = Set<String>()
 
     init(access: String, type: String, searchText: Binding<String>) {
         self.accessToken = access
@@ -25,38 +24,6 @@ struct SearchView: View {
         self.spotifyManager = SpotifyAPIManager(access: access, token: type)
         self._searchText = searchText
         self.cards = []
-    }
-
-    func fetchListenListIDs() {
-        let collections = ["songs", "albums", "podcasts", "audiobooks"]
-        var allIDs = Set<String>()
-        let group = DispatchGroup()
-
-        for collection in collections {
-            group.enter()
-            DatabaseManager.shared.fetchDocumentIds(fromCollection: collection) { ids, error in
-                if let error = error {
-                    print("Error fetching IDs from \(collection): \(error.localizedDescription)")
-                } else {
-                    allIDs.formUnion(ids)
-                }
-                group.leave()
-            }
-        }
-
-        group.enter()
-        DatabaseManager.shared.fetchArtistIdsInListenList { ids, error in
-            if let error = error {
-                print("Error fetching artist IDs from ListenList: \(error.localizedDescription)")
-            } else {
-                allIDs.formUnion(ids)
-            }
-            group.leave()
-        }
-
-        group.notify(queue: .main) {
-            self.listenListIDs = allIDs
-        }
     }
 
     @MainActor
@@ -301,63 +268,7 @@ struct SearchView: View {
     }
 
     func onAdd(card: Card) {
-        switch card.type {
-        case .song:
-            if case let .song(song) = card.input.input {
-                DatabaseManager.shared.addSong(song: song) { error in
-                    if let error = error {
-                        print("Error adding song to database: \(error.localizedDescription)")
-                    } else {
-                        listenListIDs.insert(song.id)
-                        Task { await listManager.fetchListenList(forceReload: true) }
-                    }
-                }
-            }
-        case .album:
-            if case let .album(album) = card.input.input {
-                DatabaseManager.shared.addAlbum(album: album, showOnList: true) { error in
-                    if let error = error {
-                        print("Error adding album to database: \(error.localizedDescription)")
-                    } else {
-                        listenListIDs.insert(album.id)
-                        Task { await listManager.fetchListenList(forceReload: true) }
-                    }
-                }
-            }
-        case .artist:
-            if case let .artist(artist) = card.input.input {
-                DatabaseManager.shared.addArtist(artist: artist, showOnList: true) { error in
-                    if let error = error {
-                        print("Error adding artist to database: \(error.localizedDescription)")
-                    } else {
-                        listenListIDs.insert(artist.id)
-                        Task { await listManager.fetchListenList(forceReload: true) }
-                    }
-                }
-            }
-        case .podcast:
-            if case let .podcast(podcast) = card.input.input {
-                DatabaseManager.shared.addPodcast(podcast: podcast) { error in
-                    if let error = error {
-                        print("Error adding podcast to database: \(error.localizedDescription)")
-                    } else {
-                        listenListIDs.insert(podcast.id)
-                        Task { await listManager.fetchListenList(forceReload: true) }
-                    }
-                }
-            }
-        case .audiobook:
-            if case let .audiobook(audiobook) = card.input.input {
-                DatabaseManager.shared.addAudiobook(audiobook: audiobook) { error in
-                    if let error = error {
-                        print("Error adding audiobook to database: \(error.localizedDescription)")
-                    } else {
-                        listenListIDs.insert(audiobook.id)
-                        Task { await listManager.fetchListenList(forceReload: true) }
-                    }
-                }
-            }
-        }
+        listManager.add(media: card.media)
     }
 
     var body: some View {
@@ -379,6 +290,8 @@ struct SearchView: View {
                     ProgressView("Loading Suggestions...").padding()
                 }
 
+                let currentListenListIDs = Set(listManager.cards.map { $0.id } + listManager.completedCards.map { $0.id })
+
                 if searchText.isEmpty && !suggestionCards.isEmpty {
                     VStack(alignment: .leading) {
                         Text("Recommended for You")
@@ -386,16 +299,15 @@ struct SearchView: View {
                             .padding(.horizontal)
                             .padding(.top, 5)
 
-                        CardList(results: suggestionCards, onAdd: onAdd, listenListIDs: listenListIDs)
+                        CardList(results: suggestionCards, onAdd: onAdd, listenListIDs: currentListenListIDs)
                     }
                 } else {
-                    CardList(results: cards, onAdd: onAdd, listenListIDs: listenListIDs)
+                    CardList(results: cards, onAdd: onAdd, listenListIDs: currentListenListIDs)
                 }
             }
         }
         .navigationTitle("Search")
         .onAppear {
-            fetchListenListIDs()
             Task { await fetchSuggestions() }
         }
         .onChange(of: searchManager.searchBy) {

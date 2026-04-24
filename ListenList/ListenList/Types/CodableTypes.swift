@@ -90,9 +90,16 @@ struct AlbumTracksResponse: Codable, Hashable {
     var items: [TrackItem]
 }
 
+struct ArtistTopTracksResponse: Codable, Hashable {
+    var tracks: [SongResponse]
+}
+
 struct TrackItem: Codable, Hashable {
+    var id: String
+    var name: String
+    var durationMs: Int
     var explicit: Bool
-    var name: String?
+    var artists: [ArtistResponse]
 }
 
 struct ShowSearchResponse: Codable, Hashable {

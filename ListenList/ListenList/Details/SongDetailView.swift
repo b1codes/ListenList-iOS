@@ -3,7 +3,9 @@
 import SwiftUI
 
 struct SongDetailView: View {
-    var song: Song
+    @State var song: Song
+    @EnvironmentObject var listManager: ListManager
+    @EnvironmentObject var authManager: AuthManager
 
     @State private var rating = 0
     @State private var comment = ""
@@ -86,23 +88,13 @@ struct SongDetailView: View {
                     }
                 }
 
-                Divider()
-
-                // Log as Completed Section
-                VStack(alignment: .leading, spacing: 15) {
-                    Text("Log as Completed")
-                        .font(.headline)
-
-                    HStack {
-                        Text("Rating:")
-                        RatingView(rating: $rating)
-                    }
-
-                    TextField("Optional Comment", text: $comment)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-
-                    Button(action: logAsCompleted) {
-                        Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
+                if !listManager.isItemInList(id: song.id) {
+                    Divider()
+                    
+                    Button(action: {
+                        listManager.add(media: Media(input: .song(song)))
+                    }) {
+                        Label("Add to Library", systemImage: "plus.circle")
                             .bold()
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -110,12 +102,17 @@ struct SongDetailView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
-                    .padding(.top, 10)
+                    .padding(.horizontal)
                 }
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(15)
-                .padding(.horizontal)
+
+                Divider()
+
+                MediaLoggingView(
+                    rating: $rating,
+                    comment: $comment,
+                    isAlreadyCompleted: isAlreadyCompleted,
+                    action: logAsCompleted
+                )
 
                 Spacer()
             }
@@ -130,6 +127,42 @@ struct SongDetailView: View {
             }
             if let songComment = song.comment {
                 self.comment = songComment
+            }
+            fetchFullDetails()
+        }
+    }
+
+    private func fetchFullDetails() {
+        // If popularity is 0, it might be a partial song from an album track list.
+        guard song.popularity == 0 else { return }
+        
+        guard let accessToken = authManager.accessToken, let tokenType = authManager.tokenType else { return }
+        let spotifyManager = SpotifyAPIManager(access: accessToken, token: tokenType)
+        
+        Task {
+            do {
+                if let songResponse = try await spotifyManager.getTrack(id: song.id) {
+                    let albumArtists = songResponse.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
+                    let songArtists = songResponse.artists.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) }
+                    let album = Album(id: songResponse.album.id, images: songResponse.album.images, name: songResponse.album.name, releaseDate: songResponse.album.releaseDate, artists: albumArtists, albumType: songResponse.album.albumType)
+                    
+                    let updatedSong = Song(
+                        id: songResponse.id,
+                        album: album,
+                        artists: songArtists,
+                        durationMs: songResponse.durationMs,
+                        name: songResponse.name,
+                        popularity: songResponse.popularity,
+                        explicit: songResponse.explicit,
+                        rating: song.rating,
+                        comment: song.comment,
+                        isCompleted: song.isCompleted
+                    )
+                    
+                    self.song = updatedSong
+                }
+            } catch {
+                print("Error fetching full song details: \(error)")
             }
         }
     }

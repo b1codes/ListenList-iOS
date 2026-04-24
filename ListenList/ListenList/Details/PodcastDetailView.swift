@@ -4,6 +4,7 @@ import SwiftUI
 
 struct PodcastDetailView: View {
     var podcast: Podcast
+    @EnvironmentObject var listManager: ListManager
 
     @State private var rating = 0
     @State private var comment = ""
@@ -55,21 +56,11 @@ struct PodcastDetailView: View {
 
                 Divider()
 
-                // Log as Completed Section
-                VStack(alignment: .leading, spacing: 15) {
-                    Text("Log as Completed")
-                        .font(.headline)
-
-                    HStack {
-                        Text("Rating:")
-                        RatingView(rating: $rating)
-                    }
-
-                    TextField("Optional Comment", text: $comment)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-
-                    Button(action: logAsCompleted) {
-                        Text(isAlreadyCompleted ? "Update Completion" : "Log as Completed")
+                if !listManager.isItemInList(id: podcast.id) {
+                    Button(action: {
+                        listManager.add(media: Media(input: .podcast(podcast)))
+                    }) {
+                        Label("Add to Library", systemImage: "plus.circle")
                             .bold()
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -77,12 +68,17 @@ struct PodcastDetailView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
-                    .padding(.top, 10)
+                    .padding(.horizontal)
+                    
+                    Divider()
                 }
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(15)
-                .padding(.horizontal)
+
+                MediaLoggingView(
+                    rating: $rating,
+                    comment: $comment,
+                    isAlreadyCompleted: isAlreadyCompleted,
+                    action: logAsCompleted
+                )
 
                 Divider()
 
