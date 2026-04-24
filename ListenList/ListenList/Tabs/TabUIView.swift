@@ -35,7 +35,6 @@ struct TabUIView: View {
                             SearchView(access: accessToken, type: tokenType, searchText: $searchText)
                         }
                         .searchable(text: $searchText, placement: .automatic)
-                        .tabBarMinimizeBehavior(.onScrollDown)
                     }
                 }
             }

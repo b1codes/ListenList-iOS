@@ -172,6 +172,3 @@ if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
         )
     )
 }
-        )
-    )
-}

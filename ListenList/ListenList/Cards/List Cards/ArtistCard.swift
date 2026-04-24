@@ -152,8 +152,3 @@ struct ArtistCard: View {
         )
     )
 }
-          )
-            )
-        )
-    )
-}

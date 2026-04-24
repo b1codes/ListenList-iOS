@@ -189,6 +189,3 @@ struct SongGridCard: View {
         )
     )
 }
-       )
-    )
-}

@@ -35,4 +35,12 @@ protocol DatabaseService {
 
     /// Permanently deletes an audiobook document.
     func deleteAudiobook(withId id: String, completion: @escaping (Error?) -> Void)
+
+    // MARK: - Add to list
+
+    func addSong(song: Song, completion: @escaping (Error?) -> Void)
+    func addAlbum(album: Album, showOnList: Bool, completion: @escaping (Error?) -> Void)
+    func addArtist(artist: Artist, showOnList: Bool, completion: @escaping (Error?) -> Void)
+    func addPodcast(podcast: Podcast, completion: @escaping (Error?) -> Void)
+    func addAudiobook(audiobook: Audiobook, completion: @escaping (Error?) -> Void)
 }

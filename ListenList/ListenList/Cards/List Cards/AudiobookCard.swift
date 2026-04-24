@@ -184,6 +184,3 @@ struct AudiobookCard: View {
         )
     )
 }
-        )
-    )
-}

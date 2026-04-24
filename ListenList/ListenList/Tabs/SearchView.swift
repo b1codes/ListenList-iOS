@@ -268,7 +268,7 @@ struct SearchView: View {
     }
 
     func onAdd(card: Card) {
-        listManager.add(media: card.media)
+        listManager.add(media: card.input)
     }
 
     var body: some View {
