@@ -94,7 +94,7 @@ struct SearchView: View {
             var rawResults: [Card] = []
 
             switch searchManager.searchBy {
-            case 0: // Albums
+            case .album:
                 if let newResults = try? await spotifyManager.search(query: "tag:new", type: "album"), let items = newResults.albums?.items {
                     rawResults.append(contentsOf: items.prefix(3).map { albumResponse in
                         let artists = albumResponse.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
@@ -114,7 +114,7 @@ struct SearchView: View {
                     }
                 }
 
-            case 1: // Artists
+            case .artist:
                 let seeds = contextQueries.shuffled().prefix(3)
                 for query in seeds {
                     if let results = try? await spotifyManager.search(query: query, type: "artist"), let items = results.artists?.items {
@@ -124,7 +124,7 @@ struct SearchView: View {
                     }
                 }
 
-            case 2: // Songs
+            case .song:
                 if let newResults = try? await spotifyManager.search(query: "tag:new", type: "track"), let items = newResults.tracks?.items {
                     rawResults.append(contentsOf: items.prefix(3).map { song in
                         let albumArtists = song.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
@@ -162,7 +162,7 @@ struct SearchView: View {
                     }
                 }
 
-            case 3: // Podcasts
+            case .podcast:
                 if let results = try? await spotifyManager.search(query: "podcast", type: "show"), let items = results.shows?.items {
                     rawResults = items.map { show in
                         let podcast = Podcast(id: show.id, name: show.name, publisher: show.publisher, images: show.images, explicit: show.explicit, description: show.description, totalEpisodes: show.totalEpisodes)
@@ -170,7 +170,7 @@ struct SearchView: View {
                     }
                 }
 
-            case 4: // Audiobooks
+            case .audiobook:
                 if let results = try? await spotifyManager.search(query: "audiobook", type: "audiobook"), let items = results.audiobooks?.items {
                     rawResults = items.map { audiobookResponse in
                         let authors = audiobookResponse.authors.map { Author(name: $0.name) }
@@ -190,9 +190,6 @@ struct SearchView: View {
                         return Card(input: .audiobook, media: Media(input: .audiobook(audiobook)), id: audiobook.id)
                     }
                 }
-
-            default:
-                rawResults = []
             }
 
             var uniqueIds = Set<String>()
@@ -213,145 +210,75 @@ struct SearchView: View {
         self.isLoading = true
         defer { self.isLoading = false }
 
-        switch searchManager.searchBy {
-            case 0: return await searchAlbums()
-            case 1: return await searchArtists()
-            case 2: return await searchSongs()
-            case 3: return await searchPodcasts()
-            default: return await searchAudiobooks()
-        }
-    }
-
-    func searchAlbums() async -> [Card] {
         do {
-            if let albumSearchResults = try await spotifyManager.search(query: searchText, type: "album"),
-               let albums = albumSearchResults.albums {
-
-                var albumCards: [Card] = []
-                for albumResponse in albums.items {
-                    var isExplicit = false
-                    if let tracksResponse = try await spotifyManager.getAlbumTracks(albumId: albumResponse.id) {
-                        if tracksResponse.items.contains(where: { $0.explicit }) {
-                            isExplicit = true
+            let typeString: String
+            switch searchManager.searchBy {
+            case .album: typeString = "album"
+            case .artist: typeString = "artist"
+            case .song: typeString = "track"
+            case .podcast: typeString = "show"
+            case .audiobook: typeString = "audiobook"
+            }
+            
+            guard let searchResults = try await spotifyManager.search(query: searchText, type: typeString) else {
+                return []
+            }
+            
+            switch searchManager.searchBy {
+            case .album:
+                if let albums = searchResults.albums {
+                    var albumCards: [Card] = []
+                    for albumResponse in albums.items {
+                        var isExplicit = false
+                        if let tracksResponse = try await spotifyManager.getAlbumTracks(albumId: albumResponse.id) {
+                            if tracksResponse.items.contains(where: { $0.explicit }) {
+                                isExplicit = true
+                            }
                         }
+                        let artists = albumResponse.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
+                        let album = Album(id: albumResponse.id, images: albumResponse.images, name: albumResponse.name, releaseDate: albumResponse.releaseDate, artists: artists, albumType: albumResponse.albumType, isExplicit: isExplicit, genres: albumResponse.genres, label: albumResponse.label)
+                        albumCards.append(Card(input: .album, media: Media(input: .album(album)), id: album.id))
                     }
-
-                    let artists = albumResponse.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
-                    let album = Album(
-                        id: albumResponse.id,
-                        images: albumResponse.images,
-                        name: albumResponse.name,
-                        releaseDate: albumResponse.releaseDate,
-                        artists: artists,
-                        albumType: albumResponse.albumType,
-                        isExplicit: isExplicit,
-                        genres: albumResponse.genres,
-                        label: albumResponse.label
-                    )
-                    albumCards.append(Card(input: .album, media: Media(input: .album(album)), id: album.id))
+                    return albumCards
                 }
-                return albumCards
-            }
-        } catch {
-            print("Error during album search: \(error)")
-        }
-        return []
-    }
-
-    func searchSongs() async -> [Card] {
-        do {
-            if let songSearchResults = try await spotifyManager.search(query: searchText, type: "track"),
-               let songs = songSearchResults.tracks {
-
-                return songs.items.map { song in
-                    let albumArtists = song.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
-                    let songArtists = song.artists.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) }
-                    let album = Album(
-                        id: song.album.id,
-                        images: song.album.images,
-                        name: song.album.name,
-                        releaseDate: song.album.releaseDate,
-                        artists: albumArtists,
-                        albumType: song.album.albumType
-                    )
-                    let songModel = Song(
-                        id: song.id,
-                        album: album,
-                        artists: songArtists,
-                        durationMs: song.durationMs,
-                        name: song.name,
-                        popularity: song.popularity,
-                        explicit: song.explicit
-                    )
-                    return Card(input: .song, media: Media(input: .song(songModel)), id: song.id)
-
-                }
-            }
-        } catch {
-            print("Error during song search: \(error)")
-        }
-        return []
-    }
-
-    func searchArtists() async -> [Card] {
-        do {
-            if let artistSearchResults = try await spotifyManager.search(query: searchText, type: "artist"),
-               let artists = artistSearchResults.artists {
-
+            case .artist:
+                if let artists = searchResults.artists {
                     return artists.items.map { artist in
-                        return Card(input: .artist, media: Media(input: .artist(Artist(id: artist.id, images: artist.images, name: artist.name, popularity: artist.popularity, artistId: artist.id, genres: artist.genres))), id: artist.id)
-
+                        Card(input: .artist, media: Media(input: .artist(Artist(id: artist.id, images: artist.images, name: artist.name, popularity: artist.popularity, artistId: artist.id, genres: artist.genres))), id: artist.id)
+                    }
+                }
+            case .song:
+                if let songs = searchResults.tracks {
+                    return songs.items.map { song in
+                        let albumArtists = song.album.artists?.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) } ?? []
+                        let songArtists = song.artists.map { Artist(id: $0.id, name: $0.name, artistId: $0.id) }
+                        let album = Album(id: song.album.id, images: song.album.images, name: song.album.name, releaseDate: song.album.releaseDate, artists: albumArtists, albumType: song.album.albumType)
+                        let songModel = Song(id: song.id, album: album, artists: songArtists, durationMs: song.durationMs, name: song.name, popularity: song.popularity, explicit: song.explicit)
+                        return Card(input: .song, media: Media(input: .song(songModel)), id: song.id)
+                    }
+                }
+            case .podcast:
+                if let shows = searchResults.shows {
+                    return shows.items.map { show in
+                        let podcast = Podcast(id: show.id, name: show.name, publisher: show.publisher, images: show.images, explicit: show.explicit, description: show.description, totalEpisodes: show.totalEpisodes)
+                        return Card(input: .podcast, media: Media(input: .podcast(podcast)), id: podcast.id)
+                    }
+                }
+            case .audiobook:
+                if let audiobooks = searchResults.audiobooks {
+                    return audiobooks.items.map { audiobookResponse in
+                        let authors = audiobookResponse.authors.map { Author(name: $0.name) }
+                        let narrators = audiobookResponse.narrators.map { Narrator(name: $0.name) }
+                        let audiobook = Audiobook(id: audiobookResponse.id, name: audiobookResponse.name, authors: authors, images: audiobookResponse.images, explicit: audiobookResponse.explicit, description: audiobookResponse.description, edition: audiobookResponse.edition, narrators: narrators, publisher: audiobookResponse.publisher, totalChapters: audiobookResponse.totalChapters ?? 0)
+                        return Card(input: .audiobook, media: Media(input: .audiobook(audiobook)), id: audiobook.id)
+                    }
                 }
             }
         } catch {
-            print("Error during artist search: \(error)")
+            print("Error during search: \(error)")
         }
         return []
     }
-
-    func searchPodcasts() async -> [Card] {
-        do {
-            if let showSearchResults = try await spotifyManager.search(query: searchText, type: "show"),
-               let shows = showSearchResults.shows {
-                return shows.items.map { show in
-                    let podcast = Podcast(id: show.id, name: show.name, publisher: show.publisher, images: show.images, explicit: show.explicit, description: show.description, totalEpisodes: show.totalEpisodes)
-                    return Card(input: .podcast, media: Media(input: .podcast(podcast)), id: podcast.id)
-                    }
-                    }
-                    } catch {
-                    print("Error during podcast search: \(error)")
-                    }
-                    return []
-                    }
-
-                    func searchAudiobooks() async -> [Card] {
-                    do {
-                    if let audiobookSearchResults = try await spotifyManager.search(query: searchText, type: "audiobook"),
-                    let audiobooks = audiobookSearchResults.audiobooks {
-
-                    return audiobooks.items.map { audiobookResponse in
-                    let authors = audiobookResponse.authors.map { Author(name: $0.name) }
-                    let narrators = audiobookResponse.narrators.map { Narrator(name: $0.name) }
-                    let audiobook = Audiobook(
-                        id: audiobookResponse.id,
-                        name: audiobookResponse.name,
-                        authors: authors,
-                        images: audiobookResponse.images,
-                        explicit: audiobookResponse.explicit,
-                        description: audiobookResponse.description,
-                        edition: audiobookResponse.edition,
-                        narrators: narrators,
-                        publisher: audiobookResponse.publisher,
-                        totalChapters: audiobookResponse.totalChapters ?? 0
-                    )
-                    return Card(input: .audiobook, media: Media(input: .audiobook(audiobook)), id: audiobook.id)
-                    }
-                    }
-                    } catch {
-                    print("Error during audiobook search: \(error)")
-                    }
-                    return []
-                    }
 
     @MainActor
     func startSearch() async {
@@ -366,7 +293,7 @@ struct SearchView: View {
         currentSearchTask = Task {
             let results: [Card] = await performSearch()
 
-            if searchText == thisQuery {
+            if searchText == thisQuery && !Task.isCancelled {
                 self.cards = results
             }
             self.isLoading = false
@@ -437,11 +364,11 @@ struct SearchView: View {
         ScrollView {
             VStack {
                 Picker(selection: $searchManager.searchBy, label: Text("Search Filter")) {
-                    Text("Album").tag(0)
-                    Text("Artist").tag(1)
-                    Text("Song").tag(2)
-                    Text("Podcast").tag(3)
-                    Text("Audiobook").tag(4)
+                    Text("Album").tag(SearchType.album)
+                    Text("Artist").tag(SearchType.artist)
+                    Text("Song").tag(SearchType.song)
+                    Text("Podcast").tag(SearchType.podcast)
+                    Text("Audiobook").tag(SearchType.audiobook)
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .padding()
@@ -472,6 +399,8 @@ struct SearchView: View {
             Task { await fetchSuggestions() }
         }
         .onChange(of: searchManager.searchBy) {
+            cards = [] // Explicitly clear cards when filter changes
+            currentSearchTask?.cancel()
             if searchText.isEmpty {
                 Task { await fetchSuggestions() }
             } else {

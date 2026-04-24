@@ -1,5 +1,3 @@
-// ListenList/ListenList/Managers/DatabaseManager.swift
-
 //
 //  DatabaseManager.swift
 //  ListenList
@@ -146,12 +144,16 @@ class DatabaseManager {
 
     // Instead of using Firestore.Decoder(), use the custom static method for mapping.
     func fetchAlbum(from ref: DocumentReference, completion: @escaping (AlbumDTO?, Error?) -> Void) {
-        AlbumDTO.toAlbum(from: ref) { albumDTO in
-            if let albumDTO = albumDTO {
-                completion(albumDTO, nil)
-            } else {
-                // Create a simple error if necessary.
-                let error = NSError(domain: "Album decode", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to decode album data"])
+        Task {
+            do {
+                let albumDTO = try await AlbumDTO.toAlbum(from: ref)
+                if let albumDTO = albumDTO {
+                    completion(albumDTO, nil)
+                } else {
+                    let error = NSError(domain: "Album decode", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to decode album data"])
+                    completion(nil, error)
+                }
+            } catch {
                 completion(nil, error)
             }
         }
@@ -160,45 +162,53 @@ class DatabaseManager {
     func fetchAlbum(withId albumId: String, completion: @escaping (Album?) -> Void) {
         let albumRef = db.collection("albums").document(albumId)
 
-        AlbumDTO.toAlbum(from: albumRef) { albumDTO in
-            guard let albumDTO = albumDTO else {
-                completion(nil)
-                return
-            }
-
-            self.fetchArtists(from: albumDTO.artists) { artists, error in
-                if let error = error {
-                    print("Error fetching artists for album \(albumId): \(error.localizedDescription)")
-                    let album = Album(from: albumDTO, artists: [])
-                    completion(album)
+        Task {
+            do {
+                guard let albumDTO = try await AlbumDTO.toAlbum(from: albumRef) else {
+                    completion(nil)
                     return
                 }
 
-                let album = Album(from: albumDTO, artists: artists ?? [])
-                completion(album)
+                self.fetchArtists(from: albumDTO.artists) { artists, error in
+                    if let error = error {
+                        print("Error fetching artists for album \(albumId): \(error.localizedDescription)")
+                        let album = Album(from: albumDTO, artists: [])
+                        completion(album)
+                        return
+                    }
+
+                    let album = Album(from: albumDTO, artists: artists ?? [])
+                    completion(album)
+                }
+            } catch {
+                print("Error fetching album \(albumId): \(error.localizedDescription)")
+                completion(nil)
             }
         }
     }
 
     // Update fetchArtists to use the custom mapping from ArtistDTO.toArtist
     func fetchArtists(from refs: [DocumentReference], completion: @escaping ([Artist]?, Error?) -> Void) {
-        var artists: [Artist] = []
-        let group = DispatchGroup()
-
-        for ref in refs {
-            group.enter()
-            ArtistDTO.toArtist(from: ref) { artist in
-                if let artist = artist {
-                    artists.append(artist)
-                } else {
-                    print("Error decoding artist data from \(ref.path)")
+        Task {
+            do {
+                let artists = try await withThrowingTaskGroup(of: Artist?.self) { group -> [Artist] in
+                    for ref in refs {
+                        group.addTask {
+                            try await ArtistDTO.toArtist(from: ref)
+                        }
+                    }
+                    var results: [Artist] = []
+                    for try await artist in group {
+                        if let artist = artist {
+                            results.append(artist)
+                        }
+                    }
+                    return results
                 }
-                group.leave()
+                completion(artists, nil)
+            } catch {
+                completion(nil, error)
             }
-        }
-
-        group.notify(queue: .main) {
-            completion(artists, nil)
         }
     }
 
@@ -435,23 +445,38 @@ extension DatabaseManager: DatabaseService {
             }
 
             let songIds = documents.map { $0.documentID }
-            var fetchedSongs: [Song] = []
-            let group = DispatchGroup()
 
-            for songId in songIds {
-                group.enter()
-                self.fetchSong(withId: songId) { songDTO, error in
-                    defer { group.leave() }
-                    guard let songDTO = songDTO, error == nil else { return }
-                    group.enter()
-                    SongDTO.toSong(from: songDTO) { song in
-                        if let song = song { fetchedSongs.append(song) }
-                        group.leave()
+            Task {
+                do {
+                    let fetchedSongs = try await withThrowingTaskGroup(of: Song?.self) { group -> [Song] in
+                        for songId in songIds {
+                            group.addTask {
+                                // For each song, we use withCheckedThrowingContinuation to bridge fetchSong callback to async
+                                let songDTO: SongDTO? = try await withCheckedThrowingContinuation { continuation in
+                                    self.fetchSong(withId: songId) { dto, error in
+                                        if let error = error {
+                                            continuation.resume(throwing: error)
+                                        } else {
+                                            continuation.resume(returning: dto)
+                                        }
+                                    }
+                                }
+                                guard let dto = songDTO else { return nil }
+                                return try await SongDTO.toSong(from: dto)
+                            }
+                        }
+                        var results: [Song] = []
+                        for try await song in group {
+                            if let song = song { results.append(song) }
+                        }
+                        return results
                     }
+                    DispatchQueue.main.async { completion(fetchedSongs) }
+                } catch {
+                    print("Error fetching songs: \(error)")
+                    DispatchQueue.main.async { completion([]) }
                 }
             }
-
-            group.notify(queue: .main) { completion(fetchedSongs) }
         }
     }
 
@@ -462,18 +487,31 @@ extension DatabaseManager: DatabaseService {
                 return
             }
 
-            var fetchedAlbums: [Album] = []
-            let group = DispatchGroup()
-
-            for document in documents {
-                group.enter()
-                self.fetchAlbum(withId: document.documentID) { album in
-                    if let album = album { fetchedAlbums.append(album) }
-                    group.leave()
+            Task {
+                do {
+                    let fetchedAlbums = try await withThrowingTaskGroup(of: Album?.self) { group -> [Album] in
+                        for document in documents {
+                            group.addTask {
+                                let albumId = document.documentID
+                                return await withCheckedContinuation { continuation in
+                                    self.fetchAlbum(withId: albumId) { album in
+                                        continuation.resume(returning: album)
+                                    }
+                                }
+                            }
+                        }
+                        var results: [Album] = []
+                        for try await album in group {
+                            if let album = album { results.append(album) }
+                        }
+                        return results
+                    }
+                    DispatchQueue.main.async { completion(fetchedAlbums) }
+                } catch {
+                    print("Error fetching albums: \(error)")
+                    DispatchQueue.main.async { completion([]) }
                 }
             }
-
-            group.notify(queue: .main) { completion(fetchedAlbums) }
         }
     }
 
@@ -484,18 +522,26 @@ extension DatabaseManager: DatabaseService {
                 return
             }
 
-            var fetchedArtists: [Artist] = []
-            let group = DispatchGroup()
-
-            for document in documents {
-                group.enter()
-                ArtistDTO.toArtist(from: document.reference) { artist in
-                    if let artist = artist { fetchedArtists.append(artist) }
-                    group.leave()
+            Task {
+                do {
+                    let fetchedArtists = try await withThrowingTaskGroup(of: Artist?.self) { group -> [Artist] in
+                        for document in documents {
+                            group.addTask {
+                                try await ArtistDTO.toArtist(from: document.reference)
+                            }
+                        }
+                        var results: [Artist] = []
+                        for try await artist in group {
+                            if let artist = artist { results.append(artist) }
+                        }
+                        return results
+                    }
+                    DispatchQueue.main.async { completion(fetchedArtists) }
+                } catch {
+                    print("Error fetching artists: \(error)")
+                    DispatchQueue.main.async { completion([]) }
                 }
             }
-
-            group.notify(queue: .main) { completion(fetchedArtists) }
         }
     }
 

@@ -17,39 +17,32 @@ struct ArtistDTO: Codable {
     var popularity: Int?
     var showOnList: Bool? // Add this new field
 
-    static func toArtist(from ref: DocumentReference, completion: @escaping (Artist?) -> Void) {
-        ref.getDocument { (document, error) in
-            if let error = error {
-                print("Error getting artist document: \(error)")
-                completion(nil)
-                return
-            }
-            guard let document = document, document.exists, let data = document.data() else {
-                print("Artist document does not exist")
-                completion(nil)
-                return
-            }
-            let id = ref.documentID
-            let name = data["name"] as? String ?? ""
-            let popularity = data["popularity"] as? Int ?? 0
-            let showOnList = data["showOnList"] as? Bool ?? false
-
-            // Attempt to read images as an array of dictionaries.
-            let imagesData = data["images"] as? [[String: Any]] ?? []
-            let images = imagesData.compactMap { imageDict -> ImageResponse? in
-                return ImageDTO.toImageResponse(from: imageDict)
-            }
-
-            let artist = Artist(
-                id: id,
-                images: images,
-                name: name,
-                popularity: popularity,
-                artistId: id,
-                showOnList: showOnList
-            )
-            completion(artist)
+    static func toArtist(from ref: DocumentReference) async throws -> Artist? {
+        let document = try await ref.getDocument()
+        guard document.exists, let data = document.data() else {
+            print("Artist document does not exist")
+            return nil
         }
+        let id = ref.documentID
+        let name = data["name"] as? String ?? ""
+        let popularity = data["popularity"] as? Int ?? 0
+        let showOnList = data["showOnList"] as? Bool ?? false
+
+        // Attempt to read images as an array of dictionaries.
+        let imagesData = data["images"] as? [[String: Any]] ?? []
+        let images = imagesData.compactMap { imageDict -> ImageResponse? in
+            return ImageDTO.toImageResponse(from: imageDict)
+        }
+
+        let artist = Artist(
+            id: id,
+            images: images,
+            name: name,
+            popularity: popularity,
+            artistId: id,
+            showOnList: showOnList
+        )
+        return artist
     }
 }
 
@@ -68,61 +61,49 @@ struct AlbumDTO: Codable {
     var comment: String?
     var isCompleted: Bool?
 
-    static func toAlbum(from ref: DocumentReference, completion: @escaping (AlbumDTO?) -> Void) {
-        ref.getDocument { (document, error) in
-            if let error = error {
-                print("Error getting album document: \(error)")
-                completion(nil)
-                return
-            }
-            guard let document = document, document.exists, let data = document.data() else {
-                print("Album document does not exist")
-                completion(nil)
-                return
-            }
+    static func toAlbum(from ref: DocumentReference) async throws -> AlbumDTO? {
+        let document = try await ref.getDocument()
+        guard document.exists, let data = document.data() else {
+            print("Album document does not exist")
+            return nil
+        }
 
-            let id = ref.documentID
-            let name = data["name"] as? String ?? ""
-            let releaseDate = data["release_date"] as? String ?? ""
-            let albumType = data["album_type"] as? String ?? ""
-            let showOnList = data["showOnList"] as? Bool ?? false
-            let isExplicit = data["isExplicit"] as? Bool ?? false
-            let rating = data["rating"] as? Int
-            let comment = data["comment"] as? String
-            let isCompleted = data["isCompleted"] as? Bool ?? false
+        let id = ref.documentID
+        let name = data["name"] as? String ?? ""
+        let releaseDate = data["release_date"] as? String ?? ""
+        let albumType = data["album_type"] as? String ?? ""
+        let showOnList = data["showOnList"] as? Bool ?? false
+        let isExplicit = data["isExplicit"] as? Bool ?? false
+        let rating = data["rating"] as? Int
+        let comment = data["comment"] as? String
+        let isCompleted = data["isCompleted"] as? Bool ?? false
 
-            // Correctly get the artist document references
-            let artistRefs = data["artists"] as? [DocumentReference] ?? []
+        // Correctly get the artist document references
+        let artistRefs = data["artists"] as? [DocumentReference] ?? []
 
-            if let imageDicts = data["images"] as? [[String: Any]] {
-                let images = imageDicts.compactMap { ImageDTO.toImageResponse(from: $0) }
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: images, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
-                completion(albumDTO)
-            } else if let imageRefs = data["images"] as? [DocumentReference] {
-                var fetchedImages: [ImageResponse] = []
-                let group = DispatchGroup()
-
+        if let imageDicts = data["images"] as? [[String: Any]] {
+            let images = imageDicts.compactMap { ImageDTO.toImageResponse(from: $0) }
+            return AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: images, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
+        } else if let imageRefs = data["images"] as? [DocumentReference] {
+            let fetchedImages = try await withThrowingTaskGroup(of: ImageResponse?.self) { group -> [ImageResponse] in
                 for imageRef in imageRefs {
-                    group.enter()
-                    ImageDTO.toImageResponse(from: imageRef) { image in
-                        if let image = image {
-                            fetchedImages.append(image)
-                        }
-                        group.leave()
+                    group.addTask {
+                        try await ImageDTO.toImageResponse(from: imageRef)
                     }
                 }
-
-                group.notify(queue: .main) {
-                    let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: fetchedImages, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
-                    completion(albumDTO)
+                var results: [ImageResponse] = []
+                for try await image in group {
+                    if let image = image {
+                        results.append(image)
+                    }
                 }
-            } else {
-                let albumDTO = AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: [], artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
-                completion(albumDTO)
+                return results
             }
+            return AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: fetchedImages, artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
+        } else {
+            return AlbumDTO(id: id, name: name, releaseDate: releaseDate, albumType: albumType, images: [], artists: artistRefs, showOnList: showOnList, isExplicit: isExplicit, rating: rating, comment: comment, isCompleted: isCompleted)
         }
     }
-
 }
 
 // MARK: - SongDTO
@@ -162,58 +143,55 @@ struct SongDTO: Codable {
         isCompleted = (try? container.decode(Bool.self, forKey: .isCompleted)) ?? false
     }
 
-    static func toSong(from dto: SongDTO, completion: @escaping (Song?) -> Void) {
+    static func toSong(from dto: SongDTO) async throws -> Song? {
         guard let albumRef = dto.album else {
             print("Album reference is missing")
-            completion(nil)
-            return
+            return nil
         }
 
         // Fetch the album using our custom mapping.
-        AlbumDTO.toAlbum(from: albumRef) { albumDTO in
-            guard let albumDTO = albumDTO else {
-                print("Failed to fetch album")
-                completion(nil)
-                return
-            }
+        guard let albumDTO = try await AlbumDTO.toAlbum(from: albumRef) else {
+            print("Failed to fetch album")
+            return nil
+        }
 
-            var artists: [Artist] = []
-            let group = DispatchGroup()
+        let artists = try await withThrowingTaskGroup(of: Artist?.self) { group -> [Artist] in
             for artistRef in dto.artists {
-                group.enter()
-                ArtistDTO.toArtist(from: artistRef) { artist in
-                    if let artist = artist {
-                        artists.append(artist)
-                    }
-                    group.leave()
+                group.addTask {
+                    try await ArtistDTO.toArtist(from: artistRef)
                 }
             }
-            group.notify(queue: .main) {
-                let song = Song(
-                    id: dto.id,
-                    album: Album(
-                        id: albumDTO.id,
-                        images: albumDTO.images, // Now we include fetched images.
-                        name: albumDTO.name,
-                        releaseDate: albumDTO.releaseDate,
-                        artists: [],
-                        albumType: albumDTO.albumType, // Fetch album artists if required.
-                        rating: albumDTO.rating,
-                        comment: albumDTO.comment,
-                        isCompleted: albumDTO.isCompleted
-                    ),
-                    artists: artists,
-                    durationMs: dto.durationMs,
-                    name: dto.name,
-                    popularity: dto.popularity,
-                    explicit: dto.isExplicit,
-                    rating: dto.rating,
-                    comment: dto.comment,
-                    isCompleted: dto.isCompleted
-                )
-                completion(song)
+            var results: [Artist] = []
+            for try await artist in group {
+                if let artist = artist {
+                    results.append(artist)
+                }
             }
+            return results
         }
+
+        return Song(
+            id: dto.id,
+            album: Album(
+                id: albumDTO.id,
+                images: albumDTO.images, // Now we include fetched images.
+                name: albumDTO.name,
+                releaseDate: albumDTO.releaseDate,
+                artists: [],
+                albumType: albumDTO.albumType, // Fetch album artists if required.
+                rating: albumDTO.rating,
+                comment: albumDTO.comment,
+                isCompleted: albumDTO.isCompleted
+            ),
+            artists: artists,
+            durationMs: dto.durationMs,
+            name: dto.name,
+            popularity: dto.popularity,
+            explicit: dto.isExplicit,
+            rating: dto.rating,
+            comment: dto.comment,
+            isCompleted: dto.isCompleted
+        )
     }
 }
 
@@ -224,24 +202,16 @@ struct ImageDTO: Codable {
     let width: Int
     let url: String
 
-    static func toImageResponse(from ref: DocumentReference, completion: @escaping (ImageResponse?) -> Void) {
-        ref.getDocument { (document, error) in
-            if let error = error {
-                print("Error getting image document: \(error)")
-                completion(nil)
-                return
-            }
-            guard let document = document, document.exists, let data = document.data() else {
-                print("Image document does not exist")
-                completion(nil)
-                return
-            }
-            let url = data["url"] as? String ?? ""
-            let height = data["height"] as? Int ?? 0
-            let width = data["width"] as? Int ?? 0
-            let imageResponse = ImageResponse(url: url, height: height, width: width)
-            completion(imageResponse)
+    static func toImageResponse(from ref: DocumentReference) async throws -> ImageResponse? {
+        let document = try await ref.getDocument()
+        guard document.exists, let data = document.data() else {
+            print("Image document does not exist")
+            return nil
         }
+        let url = data["url"] as? String ?? ""
+        let height = data["height"] as? Int ?? 0
+        let width = data["width"] as? Int ?? 0
+        return ImageResponse(url: url, height: height, width: width)
     }
 
     static func toImageResponse(from dict: [String: Any]) -> ImageResponse? {
