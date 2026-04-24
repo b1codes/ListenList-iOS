@@ -128,7 +128,7 @@ struct ArtistCard: View {
                     }
 
                     RoundedRectangle(cornerRadius: 15.0)
-                        .foregroundColor(.gray.opacity(0.7))
+                        .fill(.ultraThinMaterial)
                 }
                 .blur(radius: 4.2)
                 .allowsHitTesting(false)

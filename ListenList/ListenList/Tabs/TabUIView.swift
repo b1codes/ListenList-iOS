@@ -15,7 +15,7 @@ struct TabUIView: View {
     @State private var searchText = ""
 
     var body: some View {
-        if #available(iOS 26.0, *) {
+        if #available(iOS 18.0, *) {
             TabView {
                 Tab("Home", systemImage: "play.house.fill") {
                     ListenListView()

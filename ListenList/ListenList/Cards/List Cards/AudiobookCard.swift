@@ -79,13 +79,17 @@ struct AudiobookCard: View {
                             .lineLimit(1)
                             .opacity(0.8)
 
-                        if let rating = audiobook.rating, audiobook.isCompleted ?? false {
-                            HStack(spacing: 2) {
+                        HStack(spacing: 2) {
+                            if let rating = audiobook.rating, audiobook.isCompleted ?? false {
                                 ForEach(1...5, id: \.self) { index in
                                     Image(systemName: index <= rating ? "star.fill" : "star")
                                         .font(.caption2)
                                         .foregroundColor(index <= rating ? .yellow : .gray)
                                 }
+                            } else {
+                                Image(systemName: "star")
+                                    .font(.caption2)
+                                    .foregroundColor(.clear)
                             }
                         }
                     }
@@ -150,7 +154,7 @@ struct AudiobookCard: View {
                     }
 
                     RoundedRectangle(cornerRadius: 15.0)
-                        .foregroundColor(.gray.opacity(0.7))
+                        .fill(.ultraThinMaterial)
                 }
                 .blur(radius: 4.2)
                 .allowsHitTesting(false)
