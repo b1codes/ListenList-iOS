@@ -18,15 +18,13 @@ struct AlbumDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
                 // Header: Cover Art and Basic Info
                 HStack(alignment: .top, spacing: 20) {
-                    if let imageUrl = album.images.first?.url, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                Color.gray
-                            }
+                    if let imageUrl = album.images.largest(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView().tint(.white)
                         }
                         .frame(width: 150, height: 150)
                         .cornerRadius(12)

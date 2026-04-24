@@ -57,16 +57,14 @@ struct ArtistGridCard: View {
                         .fontWeight(.bold)
                         .opacity(0.8)
                         .padding(.top, 8)
-                    // Artist Image
-                    if let images = artist.images, !images.isEmpty {
-                        AsyncImage(url: URL(string: images[0].url)) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                ProgressView().tint(.white)
-                            }
+                    // Artist Art
+                    if let imageUrl = artist.images?.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView().tint(.white)
                         }
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
@@ -113,15 +111,13 @@ struct ArtistGridCard: View {
             .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let images = artist.images, !images.isEmpty, let imageUrl = images.first?.url, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } else {
-                                Color.gray
-                            }
+                    if let imageUrl = artist.images?.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Color.gray
                         }
                     } else {
                         Color.gray
@@ -169,6 +165,11 @@ struct ArtistGridCard: View {
                     name: "Kid Cudi",
                     artistId: "1"
                 )
+            )
+        )
+    )
+}
+          )
             )
         )
     )

@@ -49,22 +49,20 @@ struct AudiobookCard: View {
         return AnyView(
             ZStack(alignment: .leading) {
                 HStack(spacing: 15) {
-                    if audiobook.images.isEmpty {
-                        placeholderImage
-                    } else {
-                        AsyncImage(url: URL(string: audiobook.images[0].url)) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                ProgressView().tint(.white)
-                            }
+                    // Audiobook Art
+                    if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView().tint(.white)
                         }
                         .frame(width: 90, height: 90)
                         .cornerRadius(10.0)
+                    } else {
+                        placeholderImage
                     }
-
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
                             Text(audiobook.name)
@@ -139,15 +137,13 @@ struct AudiobookCard: View {
             .frame(maxWidth: 600, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let imageUrl = audiobook.images.first?.url, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } else {
-                                Color.gray
-                            }
+                    if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Color.gray
                         }
                     } else {
                         Color.gray
@@ -185,6 +181,9 @@ struct AudiobookCard: View {
                     totalChapters: 50
                 )
             )
+        )
+    )
+}
         )
     )
 }

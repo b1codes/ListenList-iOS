@@ -46,20 +46,18 @@ struct SongCard: View {
                 // MARK: - Layer 1: Foreground Content
                 HStack(spacing: 15) {
                     // Album Art
-                    if song.album.images.isEmpty {
-                        placeholderImage
-                    } else {
-                        AsyncImage(url: URL(string: song.album.images[0].url)) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                ProgressView().tint(.white)
-                            }
+                    if let imageUrl = song.album.images.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView().tint(.white)
                         }
                         .frame(width: 90, height: 90)
                         .cornerRadius(10.0)
+                    } else {
+                        placeholderImage
                     }
 
                     // Song Info
@@ -138,15 +136,13 @@ struct SongCard: View {
             .frame(maxWidth: 600, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let imageUrl = song.album.images.first?.url, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } else {
-                                Color.gray
-                            }
+                    if let imageUrl = song.album.images.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Color.gray
                         }
                     } else {
                         Color.gray
@@ -195,5 +191,8 @@ struct SongCard: View {
                 )
             )
         )
+    )
+}
+       )
     )
 }

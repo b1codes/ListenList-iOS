@@ -26,15 +26,13 @@ struct SongDetailView: View {
         ScrollView {
             VStack(alignment: .center, spacing: 30) {
                 // Large Album Art
-                if let imageUrl = song.album.images.first?.url, let url = URL(string: imageUrl) {
-                    AsyncImage(url: url) { phase in
-                        if let image = phase.image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } else {
-                            Color.gray
-                        }
+                if let imageUrl = song.album.images.largest(), let url = URL(string: imageUrl) {
+                    CachedAsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    } placeholder: {
+                        ProgressView().tint(.white)
                     }
                     .frame(maxWidth: 300)
                     .cornerRadius(20)

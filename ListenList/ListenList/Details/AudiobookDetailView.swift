@@ -15,15 +15,13 @@ struct AudiobookDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
                 // Header section
                 HStack(alignment: .top, spacing: 15) {
-                    if let imageUrl = audiobook.images.first?.url, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                Color.gray
-                            }
+                    if let imageUrl = audiobook.images.largest(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView().tint(.white)
                         }
                         .frame(width: 120, height: 180)
                         .cornerRadius(10)

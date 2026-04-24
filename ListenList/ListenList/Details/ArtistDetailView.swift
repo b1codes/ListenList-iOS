@@ -15,15 +15,13 @@ struct ArtistDetailView: View {
         ScrollView {
             VStack(alignment: .center, spacing: 30) {
                 // Large Artist Image
-                if let imageUrl = artist.images?.first?.url, let url = URL(string: imageUrl) {
-                    AsyncImage(url: url) { phase in
-                        if let image = phase.image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } else {
-                            Color.gray
-                        }
+                if let imageUrl = artist.images?.largest(), let url = URL(string: imageUrl) {
+                    CachedAsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    } placeholder: {
+                        Color.gray
                     }
                     .frame(maxWidth: 300)
                     .clipShape(Circle())
@@ -93,11 +91,11 @@ struct ArtistDetailView: View {
                             ForEach(topTracks.prefix(5)) { song in
                                 NavigationLink(destination: SongDetailView(song: song)) {
                                     HStack {
-                                        if let imageUrl = song.album.images.first?.url, let url = URL(string: imageUrl) {
-                                            AsyncImage(url: url) { image in
+                                        if let imageUrl = song.album.images.medium(), let url = URL(string: imageUrl) {
+                                            CachedAsyncImage(url: url) { image in
                                                 image.resizable()
                                             } placeholder: {
-                                                Color.gray
+                                                ProgressView().tint(.white)
                                             }
                                             .frame(width: 50, height: 50)
                                             .cornerRadius(5)
@@ -137,8 +135,8 @@ struct ArtistDetailView: View {
                                     ForEach(albums) { album in
                                         NavigationLink(destination: AlbumDetailView(album: album)) {
                                             VStack(alignment: .leading) {
-                                                if let imageUrl = album.images.first?.url, let url = URL(string: imageUrl) {
-                                                    AsyncImage(url: url) { image in
+                                                if let imageUrl = album.images.medium(), let url = URL(string: imageUrl) {
+                                                    CachedAsyncImage(url: url) { image in
                                                         image.resizable()
                                                     } placeholder: {
                                                         Color.gray

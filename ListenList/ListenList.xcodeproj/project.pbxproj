@@ -100,36 +100,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CA8463162D277F9D005BB9DC /* FirebaseMessaging in Frameworks */,
-				CA8463042D277F9D005BB9DC /* FirebaseDatabase in Frameworks */,
-				CA8462EE2D277D46005BB9DC /* FirebaseAppCheck in Frameworks */,
-				CA8462E82D277D46005BB9DC /* FirebaseAnalytics in Frameworks */,
-				CA84630E2D277F9D005BB9DC /* FirebaseFunctionsCombine-Community in Frameworks */,
-				CA8463202D277F9D005BB9DC /* FirebaseVertexAI in Frameworks */,
-				CA84630A2D277F9D005BB9DC /* FirebaseFirestoreCombine-Community in Frameworks */,
-				CA8462F22D277F9D005BB9DC /* FirebaseAnalytics in Frameworks */,
 				CA8463082D277F9D005BB9DC /* FirebaseFirestore in Frameworks */,
-				CA8463022D277F9D005BB9DC /* FirebaseCrashlytics in Frameworks */,
-				CA8463102D277F9D005BB9DC /* FirebaseInAppMessaging-Beta in Frameworks */,
-				CA8463142D277F9D005BB9DC /* FirebaseMLModelDownloader in Frameworks */,
-				71C478882E3D90FC00BBCF6E /* KeychainSwift in Frameworks */,
-				CA8462F42D277F9D005BB9DC /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
-				CA8462F02D277D46005BB9DC /* FirebaseAppDistribution-Beta in Frameworks */,
-				CA8463122D277F9D005BB9DC /* FirebaseInstallations in Frameworks */,
-				CA8462EC2D277D46005BB9DC /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
-				CA84630C2D277F9D005BB9DC /* FirebaseFunctions in Frameworks */,
-				CA8462EA2D277D46005BB9DC /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
-				CA8463182D277F9D005BB9DC /* FirebasePerformance in Frameworks */,
-				CA8462FE2D277F9D005BB9DC /* FirebaseAuthCombine-Community in Frameworks */,
 				CA8463002D277F9D005BB9DC /* FirebaseCore in Frameworks */,
-				CA84631C2D277F9D005BB9DC /* FirebaseStorage in Frameworks */,
-				CA8463062D277F9D005BB9DC /* FirebaseDynamicLinks in Frameworks */,
-				CA84631E2D277F9D005BB9DC /* FirebaseStorageCombine-Community in Frameworks */,
-				CA8462FC2D277F9D005BB9DC /* FirebaseAuth in Frameworks */,
-				CA8462FA2D277F9D005BB9DC /* FirebaseAppDistribution-Beta in Frameworks */,
-				CA84631A2D277F9D005BB9DC /* FirebaseRemoteConfig in Frameworks */,
-				CA8462F82D277F9D005BB9DC /* FirebaseAppCheck in Frameworks */,
-				CA8462F62D277F9D005BB9DC /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
+				71C478882E3D90FC00BBCF6E /* KeychainSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

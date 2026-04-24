@@ -63,20 +63,18 @@ struct AlbumGridCard: View {
                         .padding(.top, 4)
 
                     // Album Art
-                    if album.images.isEmpty {
-                        placeholderImage
-                    } else {
-                        AsyncImage(url: URL(string: album.images[0].url)) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                ProgressView().tint(.white)
-                            }
+                    if let imageUrl = album.images.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView().tint(.white)
                         }
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
+                    } else {
+                        placeholderImage
                     }
                     Spacer()
                     // Album Info
@@ -140,15 +138,13 @@ struct AlbumGridCard: View {
             .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let imageUrl = album.images.first?.url, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } else {
-                                Color.gray
-                            }
+                    if let imageUrl = album.images.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Color.gray
                         }
                     } else {
                         Color.gray

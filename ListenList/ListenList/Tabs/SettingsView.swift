@@ -25,15 +25,15 @@ struct SettingsView: View {
                         }
                     } else if let profile = userProfile {
                         HStack(spacing: 15) {
-                            if let imageUrl = profile.images?.first?.url, let url = URL(string: imageUrl) {
-                                AsyncImage(url: url) { image in
+                            if let imageUrl = profile.images?.medium(), let url = URL(string: imageUrl) {
+                                CachedAsyncImage(url: url) { image in
                                     image
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
                                 } placeholder: {
-                                    Color.gray
+                                    ProgressView()
                                 }
-                                .frame(width: 60, height: 60)
+                                .frame(width: 80, height: 80)
                                 .clipShape(Circle())
                             } else {
                                 Image(systemName: "person.circle.fill")

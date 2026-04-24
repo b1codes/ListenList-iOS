@@ -70,6 +70,28 @@ struct ImageResponse: Codable, Hashable {
     var width: Int?
 }
 
+extension Array where Element == ImageResponse {
+    /// Returns the URL for the smallest image (typically 64x64).
+    func smallest() -> String? {
+        // Spotify typically returns images in descending order of size.
+        return self.last?.url
+    }
+    
+    /// Returns the URL for a medium-sized image (typically 300x300).
+    func medium() -> String? {
+        if self.count >= 2 {
+            // Index 1 is often the medium size (300x300).
+            return self[1].url
+        }
+        return self.first?.url
+    }
+    
+    /// Returns the URL for the largest image (typically 640x640).
+    func largest() -> String? {
+        return self.first?.url
+    }
+}
+
 extension ImageResponse {
     init(from dto: ImageDTO) {
         self.height = dto.height

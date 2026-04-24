@@ -40,16 +40,14 @@ struct ArtistCard: View {
             ZStack(alignment: .leading) {
                 // MARK: - Layer 1: Foreground Content
                 HStack(spacing: 15) {
-                    // Artist Image
-                    if let images = artist.images, !images.isEmpty {
-                        AsyncImage(url: URL(string: images[0].url)) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                ProgressView().tint(.white)
-                            }
+                    // Artist Art
+                    if let imageUrl = artist.images?.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView().tint(.white)
                         }
                         .frame(width: 90, height: 90)
                         .cornerRadius(10.0)
@@ -113,15 +111,13 @@ struct ArtistCard: View {
             .frame(maxWidth: 600, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let images = artist.images, !images.isEmpty, let imageUrl = images.first?.url, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } else {
-                                Color.gray
-                            }
+                    if let imageUrl = artist.images?.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Color.gray
                         }
                     } else {
                         Color.gray
@@ -152,6 +148,11 @@ struct ArtistCard: View {
                     name: "Kid Cudi",
                     artistId: "1"
                 )
+            )
+        )
+    )
+}
+          )
             )
         )
     )

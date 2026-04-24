@@ -44,20 +44,18 @@ struct PodcastGridCard: View {
                         .opacity(0.8)
                         .padding(.top, 4)
 
-                    if podcast.images.isEmpty {
-                        placeholderImage
-                    } else {
-                        AsyncImage(url: URL(string: podcast.images[0].url)) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            } else {
-                                ProgressView().tint(.white)
-                            }
+                    if let imageUrl = podcast.images.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView().tint(.white)
                         }
                         .frame(width: 165, height: 165)
                         .cornerRadius(10.0)
+                    } else {
+                        placeholderImage
                     }
                     Spacer()
                     VStack(alignment: .leading, spacing: 5) {
@@ -117,15 +115,13 @@ struct PodcastGridCard: View {
             .frame(maxWidth: maxWidth, maxHeight: maxHeight)
             .background(
                 ZStack {
-                    if let imageUrl = podcast.images.first?.url, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } else {
-                                Color.gray
-                            }
+                    if let imageUrl = podcast.images.medium(), let url = URL(string: imageUrl) {
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Color.gray
                         }
                     } else {
                         Color.gray
