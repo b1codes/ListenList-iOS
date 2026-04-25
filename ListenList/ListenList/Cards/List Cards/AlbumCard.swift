@@ -75,17 +75,15 @@ struct AlbumCard: View {
                             .lineLimit(1)
                             .opacity(0.8)
 
-                        HStack(spacing: 2) {
-                            if let rating = album.rating, album.isCompleted ?? false {
-                                ForEach(1...5, id: \.self) { index in
-                                    Image(systemName: index <= rating ? "star.fill" : "star")
-                                        .font(.caption2)
-                                        .foregroundColor(index <= rating ? .yellow : .gray)
+                        if album.isCompleted ?? false {
+                            HStack(spacing: 2) {
+                                if let rating = album.rating {
+                                    ForEach(1...5, id: \.self) { index in
+                                        Image(systemName: index <= rating ? "star.fill" : "star")
+                                            .font(.caption2)
+                                            .foregroundColor(index <= rating ? .yellow : .gray)
+                                    }
                                 }
-                            } else {
-                                Image(systemName: "star")
-                                    .font(.caption2)
-                                    .foregroundColor(.clear)
                             }
                         }
                     }

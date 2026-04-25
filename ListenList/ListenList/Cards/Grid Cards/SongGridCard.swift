@@ -24,8 +24,13 @@ struct SongGridCard: View {
         self.onDelete = onDelete
     }
 
-    let maxHeight: CGFloat = 270
-    let maxWidth: CGFloat = 185
+    private var currentMaxHeight: CGFloat {
+        (song?.isCompleted ?? false) ? 290 : 270
+    }
+    
+    private var topPadding: CGFloat {
+        (song?.isCompleted ?? false) ? 6 : 18
+    }
 
     private func artistsToStr() -> String {
         guard let artists = song?.artists, !artists.isEmpty else { return "Unknown Artist" }
@@ -48,27 +53,35 @@ struct SongGridCard: View {
         return AnyView(
             ZStack {
                 // MARK: - Layer 1: Foreground Content
-                VStack(spacing: 4) {
-                    // "SONG" text
-                    Text("SONG")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .opacity(0.8)
-                        .padding(.top, 4) // Added small top padding to prevent touching the edge
+                VStack(alignment: .leading, spacing: 4) {
+                    // \"SONG\" text
+                    HStack {
+                        Spacer()
+                        Text("SONG")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .opacity(0.8)
+                        Spacer()
+                    }
+                    .padding(.top, topPadding)
 
                     // Album Art
-                    if let imageUrl = song.album.images.medium(), let url = URL(string: imageUrl) {
-                        CachedAsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            ProgressView().tint(.white)
+                    HStack {
+                        Spacer()
+                        if let imageUrl = song.album.images.medium(), let url = URL(string: imageUrl) {
+                            CachedAsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                ProgressView().tint(.white)
+                            }
+                            .frame(width: 165, height: 165)
+                            .cornerRadius(10.0)
+                        } else {
+                            placeholderImage
                         }
-                        .frame(width: 165, height: 165)
-                        .cornerRadius(10.0)
-                    } else {
-                        placeholderImage
+                        Spacer()
                     }
 
                     Spacer()
@@ -101,20 +114,23 @@ struct SongGridCard: View {
                                     .foregroundColor(.clear)
                             }
                         }
-                    }
+                    }.padding(.horizontal, 6)
 
                     Spacer()
                     // Add Button
                     if let onAdd = onAdd {
-                        Spacer()
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title)
+                        HStack {
+                            Spacer()
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                            }
+                            Spacer()
                         }
                     }
                 }
                 .padding(.horizontal, 15)
-                .padding(.bottom, 4) // Removed top padding from the VStack
+                .padding(.bottom, 4)
 
                 // MARK: - Layer 2: Overlays
                 // Edit mode overlay
@@ -131,7 +147,7 @@ struct SongGridCard: View {
                     }
                 }
             }
-            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
+            .frame(maxWidth: 185, maxHeight: currentMaxHeight)
             .background(
                 ZStack {
                     if let imageUrl = song.album.images.medium(), let url = URL(string: imageUrl) {

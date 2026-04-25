@@ -1,4 +1,9 @@
-// ListenList/ListenList/Cards/Grid Cards/AudiobookGridCard.swift
+//
+//  AudiobookGridCard.swift
+//  ListenList
+//
+//  Created by Brandon Lamer-Connolly on 10/12/24.
+//
 
 import SwiftUI
 
@@ -19,8 +24,13 @@ struct AudiobookGridCard: View {
         self.onDelete = onDelete
     }
 
-    let maxHeight: CGFloat = 270
-    let maxWidth: CGFloat = 185
+    private var currentMaxHeight: CGFloat {
+        (audiobook?.isCompleted ?? false) ? 290 : 270
+    }
+    
+    private var topPadding: CGFloat {
+        (audiobook?.isCompleted ?? false) ? 6 : 18
+    }
 
     private func authorsToStr() -> String {
         guard let authors = audiobook?.authors, !authors.isEmpty else { return "Unknown Author" }
@@ -47,27 +57,38 @@ struct AudiobookGridCard: View {
 
         return AnyView(
             ZStack {
-                VStack(spacing: 4) {
-                    Text("AUDIOBOOK")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .opacity(0.8)
-                        .padding(.top, 4)
-// Audiobook Art
-if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
-    CachedAsyncImage(url: url) { image in
-        image
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-    } placeholder: {
-        ProgressView().tint(.white)
-    }
-    .frame(width: 165, height: 165)
-    .cornerRadius(10.0)
-} else {
-    placeholderImage
-}
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Spacer()
+                        Text("AUDIOBOOK")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .opacity(0.8)
+                        Spacer()
+                    }
+                    .padding(.top, topPadding)
+
+                    // Audiobook Art
+                    HStack {
+                        Spacer()
+                        if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
+                            CachedAsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                ProgressView().tint(.white)
+                            }
+                            .frame(width: 165, height: 165)
+                            .cornerRadius(10.0)
+                        } else {
+                            placeholderImage
+                        }
+                        Spacer()
+                    }
+
                     Spacer()
+
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
                             Text(audiobook.name)
@@ -95,14 +116,17 @@ if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
                                     .foregroundColor(.clear)
                             }
                         }
-                    }
+                    }.padding(.horizontal, 6)
                     Spacer()
 
                     if let onAdd = onAdd {
-                        Spacer()
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title)
+                        HStack {
+                            Spacer()
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                            }
+                            Spacer()
                         }
                     }
                 }
@@ -122,7 +146,7 @@ if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
                     }
                 }
             }
-            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
+            .frame(maxWidth: 185, maxHeight: currentMaxHeight)
             .background(
                 ZStack {
                     if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {

@@ -31,8 +31,13 @@ struct ArtistGridCard: View {
         self.onDelete = onDelete
     }
 
-    let maxHeight: CGFloat = 270
-    let maxWidth: CGFloat = 185
+    private var currentMaxHeight: CGFloat {
+        (artist?.isCompleted ?? false) ? 290 : 270
+    }
+    
+    private var topPadding: CGFloat {
+        (artist?.isCompleted ?? false) ? 6 : 18
+    }
 
     private var placeholderImage: some View {
         Image(systemName: "music.microphone")
@@ -50,26 +55,34 @@ struct ArtistGridCard: View {
         return AnyView(
             ZStack {
                 // MARK: - Layer 1: Foreground Content
-                VStack(spacing: 4) {
-                    // "ARTIST" text
-                    Text("ARTIST")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .opacity(0.8)
-                        .padding(.top, 8)
+                VStack(alignment: .leading, spacing: 4) {
+                    // \"ARTIST\" text
+                    HStack {
+                        Spacer()
+                        Text("ARTIST")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .opacity(0.8)
+                        Spacer()
+                    }
+                    .padding(.top, topPadding)
                     // Artist Art
-                    if let imageUrl = artist.images?.medium(), let url = URL(string: imageUrl) {
-                        CachedAsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            ProgressView().tint(.white)
+                    HStack {
+                        Spacer()
+                        if let imageUrl = artist.images?.medium(), let url = URL(string: imageUrl) {
+                            CachedAsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                ProgressView().tint(.white)
+                            }
+                            .frame(width: 165, height: 165)
+                            .cornerRadius(10.0)
+                        } else {
+                            placeholderImage
                         }
-                        .frame(width: 165, height: 165)
-                        .cornerRadius(10.0)
-                    } else {
-                        placeholderImage
+                        Spacer()
                     }
                     Spacer()
 
@@ -77,16 +90,33 @@ struct ArtistGridCard: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(artist.name)
                             .bold()
-                            .lineLimit(2)
-                    }
+                            .lineLimit(1)
+                            .padding(.vertical, artist.isCompleted ?? false ? 0 : 12)
+                        HStack(spacing: 2) {
+                            if let rating = artist.rating, artist.isCompleted ?? false {
+                                ForEach(1...5, id: \.self) { index in
+                                    Image(systemName: index <= rating ? "star.fill" : "star")
+                                        .font(.caption2)
+                                        .foregroundColor(index <= rating ? .yellow : .gray)
+                                }
+                            } else {
+                                Image(systemName: "star")
+                                    .font(.caption2)
+                                    .foregroundColor(.clear)
+                            }
+                        }
+                    }.padding(.horizontal, 6)
                     Spacer()
 
                     // Add Button
                     if let onAdd = onAdd {
-                        Spacer()
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title)
+                        HStack {
+                            Spacer()
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                            }
+                            Spacer()
                         }
                     }
                 }
@@ -108,7 +138,7 @@ struct ArtistGridCard: View {
                     }
                 }
             }
-            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
+            .frame(maxWidth: 185, maxHeight: currentMaxHeight)
             .background(
                 ZStack {
                     if let imageUrl = artist.images?.medium(), let url = URL(string: imageUrl) {
@@ -163,7 +193,9 @@ struct ArtistGridCard: View {
                         ImageResponse(url: "https://i.scdn.co/image/ab6761610000e5eb5f00bb6dd7a7008d14156630", height: 640, width: 640)
                     ],
                     name: "Kid Cudi",
-                    artistId: "1"
+                    artistId: "1",
+                    rating: 3,
+                    isCompleted: true
                 )
             )
         )

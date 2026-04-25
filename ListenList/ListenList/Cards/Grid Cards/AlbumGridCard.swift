@@ -31,8 +31,14 @@ struct AlbumGridCard: View {
         self.onDelete = onDelete
     }
 
-    let maxHeight: CGFloat = 270
-    let maxWidth: CGFloat = 185
+    private var currentMaxHeight: CGFloat {
+        (album?.isCompleted ?? false) ? 290 : 270
+    }
+    
+    private var topPadding: CGFloat {
+        (album?.isCompleted ?? false) ? 6 : 18
+    }
+
     private func artistsToStr() -> String {
         guard let artists = album?.artists, !artists.isEmpty else { return "Unknown Artist" }
         return artists.map { $0.name }.joined(separator: ", ")
@@ -54,27 +60,35 @@ struct AlbumGridCard: View {
         return AnyView(
             ZStack {
                 // MARK: - Layer 1: Foreground Content
-                VStack(spacing: 4) {
+                VStack(alignment: .leading, spacing: 4) {
                     // "ALBUM" text
-                    Text(album.albumType.uppercased())
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .opacity(0.8)
-                        .padding(.top, 4)
+                    HStack {
+                        Spacer()
+                        Text(album.albumType.uppercased())
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .opacity(0.8)
+                        Spacer()
+                    }
+                    .padding(.top, topPadding)
 
                     // Album Art
-                    if let imageUrl = album.images.medium(), let url = URL(string: imageUrl) {
-                        CachedAsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            ProgressView().tint(.white)
+                    HStack {
+                        Spacer()
+                        if let imageUrl = album.images.medium(), let url = URL(string: imageUrl) {
+                            CachedAsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                ProgressView().tint(.white)
+                            }
+                            .frame(width: 165, height: 165)
+                            .cornerRadius(10.0)
+                        } else {
+                            placeholderImage
                         }
-                        .frame(width: 165, height: 165)
-                        .cornerRadius(10.0)
-                    } else {
-                        placeholderImage
+                        Spacer()
                     }
                     Spacer()
                     // Album Info
@@ -105,15 +119,18 @@ struct AlbumGridCard: View {
                                     .foregroundColor(.clear)
                             }
                         }
-                    }
+                    }.padding(.horizontal, 6)
                     Spacer()
 
                     // Add Button
                     if let onAdd = onAdd {
-                        Spacer()
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title)
+                        HStack {
+                            Spacer()
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                            }
+                            Spacer()
                         }
                     }
                 }
@@ -135,7 +152,7 @@ struct AlbumGridCard: View {
                     }
                 }
             }
-            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
+            .frame(maxWidth: 185, maxHeight: currentMaxHeight)
             .background(
                 ZStack {
                     if let imageUrl = album.images.medium(), let url = URL(string: imageUrl) {
@@ -177,7 +194,10 @@ struct AlbumGridCard: View {
                     artists: [
                         Artist(id: "1", name: "Alex Warren", artistId: "1")
                     ],
-                    albumType: "single"
+                    albumType: "single",
+                    rating: 4,
+                    comment: "Loved the production and vocals!",
+                    isCompleted: true
                 )
             )
         )

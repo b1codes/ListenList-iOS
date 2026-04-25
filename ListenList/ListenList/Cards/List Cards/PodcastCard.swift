@@ -70,17 +70,15 @@ struct PodcastCard: View {
                             .lineLimit(1)
                             .opacity(0.8)
 
-                        HStack(spacing: 2) {
-                            if let rating = podcast.rating, podcast.isCompleted ?? false {
-                                ForEach(1...5, id: \.self) { index in
-                                    Image(systemName: index <= rating ? "star.fill" : "star")
-                                        .font(.caption2)
-                                        .foregroundColor(index <= rating ? .yellow : .gray)
+                        if podcast.isCompleted ?? false {
+                            HStack(spacing: 2) {
+                                if let rating = podcast.rating {
+                                    ForEach(1...5, id: \.self) { index in
+                                        Image(systemName: index <= rating ? "star.fill" : "star")
+                                            .font(.caption2)
+                                            .foregroundColor(index <= rating ? .yellow : .gray)
+                                    }
                                 }
-                            } else {
-                                Image(systemName: "star")
-                                    .font(.caption2)
-                                    .foregroundColor(.clear)
                             }
                         }
                     }

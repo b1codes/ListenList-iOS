@@ -60,6 +60,18 @@ struct ArtistCard: View {
                         Text(artist.name)
                             .bold()
                             .lineLimit(2)
+                        
+                        if artist.isCompleted ?? false {
+                            HStack(spacing: 2) {
+                                if let rating = artist.rating {
+                                    ForEach(1...5, id: \.self) { index in
+                                        Image(systemName: index <= rating ? "star.fill" : "star")
+                                            .font(.caption2)
+                                            .foregroundColor(index <= rating ? .yellow : .gray)
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     Spacer()

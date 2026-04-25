@@ -1,4 +1,9 @@
-// ListenList/ListenList/Cards/Grid Cards/PodcastGridCard.swift
+//
+//  PodcastGridCard.swift
+//  ListenList
+//
+//  Created by Brandon Lamer-Connolly on 10/12/24.
+//
 
 import SwiftUI
 
@@ -9,9 +14,6 @@ struct PodcastGridCard: View {
     var isInEditMode: Bool = false
     var onDelete: (() -> Void)?
 
-    let maxHeight: CGFloat = 270
-    let maxWidth: CGFloat = 185
-
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil) {
         self.input = input
         if case let .podcast(podcast) = input.input {
@@ -20,6 +22,14 @@ struct PodcastGridCard: View {
         self.onAdd = onAdd
         self.isInEditMode = isInEditMode
         self.onDelete = onDelete
+    }
+
+    private var currentMaxHeight: CGFloat {
+        (podcast?.isCompleted ?? false) ? 290 : 270
+    }
+    
+    private var topPadding: CGFloat {
+        (podcast?.isCompleted ?? false) ? 6 : 18
     }
 
     private var placeholderImage: some View {
@@ -37,27 +47,37 @@ struct PodcastGridCard: View {
 
         return AnyView(
             ZStack {
-                VStack(spacing: 4) {
-                    Text("PODCAST")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .opacity(0.8)
-                        .padding(.top, 4)
-
-                    if let imageUrl = podcast.images.medium(), let url = URL(string: imageUrl) {
-                        CachedAsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            ProgressView().tint(.white)
-                        }
-                        .frame(width: 165, height: 165)
-                        .cornerRadius(10.0)
-                    } else {
-                        placeholderImage
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Spacer()
+                        Text("PODCAST")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .opacity(0.8)
+                        Spacer()
                     }
+                    .padding(.top, topPadding)
+
+                    HStack {
+                        Spacer()
+                        if let imageUrl = podcast.images.medium(), let url = URL(string: imageUrl) {
+                            CachedAsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                ProgressView().tint(.white)
+                            }
+                            .frame(width: 165, height: 165)
+                            .cornerRadius(10.0)
+                        } else {
+                            placeholderImage
+                        }
+                        Spacer()
+                    }
+
                     Spacer()
+
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
                             Text(podcast.name)
@@ -85,14 +105,17 @@ struct PodcastGridCard: View {
                                     .foregroundColor(.clear)
                             }
                         }
-                    }
+                    }.padding(.horizontal, 6)
                     Spacer()
 
                     if let onAdd = onAdd {
-                        Spacer()
-                        Button(action: onAdd) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title)
+                        HStack {
+                            Spacer()
+                            Button(action: onAdd) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title)
+                            }
+                            Spacer()
                         }
                     }
                 }
@@ -112,7 +135,7 @@ struct PodcastGridCard: View {
                     }
                 }
             }
-            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
+            .frame(maxWidth: 185, maxHeight: currentMaxHeight)
             .background(
                 ZStack {
                     if let imageUrl = podcast.images.medium(), let url = URL(string: imageUrl) {
