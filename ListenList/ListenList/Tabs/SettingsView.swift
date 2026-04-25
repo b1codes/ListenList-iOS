@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var settingsManager: SettingsManager
     @State private var userProfile: UserProfileResponse?
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -62,6 +63,22 @@ struct SettingsView: View {
                     }
                 }
 
+                Section(header: Text("Appearance")) {
+                    VStack(alignment: .leading) {
+                        Text("Card Glass Opacity")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        Picker("Glass Opacity", selection: $settingsManager.glassOpacity) {
+                            ForEach(GlassOpacity.allCases) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                    }
+                    .padding(.vertical, 4)
+                }
+
                 Section {
                     Button(action: {
                         authManager.logout()
@@ -111,4 +128,5 @@ struct SettingsView: View {
 #Preview {
     SettingsView()
         .environmentObject(AuthManager())
+        .environmentObject(SettingsManager())
 }
