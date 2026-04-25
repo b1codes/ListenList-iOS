@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct ArtistCard: View {
+    @EnvironmentObject var settingsManager: SettingsManager
     var input: Media
     var artist: Artist?
     var onAdd: (() -> Void)?
@@ -137,6 +138,7 @@ struct ArtistCard: View {
 
                     RoundedRectangle(cornerRadius: 15.0)
                         .fill(.ultraThinMaterial)
+                        .opacity(settingsManager.glassOpacity.opacityValue)
                 }
                 .blur(radius: 4.2)
                 .allowsHitTesting(false)

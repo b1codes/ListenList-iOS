@@ -15,6 +15,7 @@
 import SwiftUI
 
 struct AlbumGridCard: View {
+    @EnvironmentObject var settingsManager: SettingsManager
     var input: Media
     var album: Album?
     var onAdd: (() -> Void)?
@@ -169,6 +170,7 @@ struct AlbumGridCard: View {
 
                     RoundedRectangle(cornerRadius: 15.0)
                         .fill(.ultraThinMaterial)
+                        .opacity(settingsManager.glassOpacity.opacityValue)
                 }
                 .blur(radius: 4.2)
                 .allowsHitTesting(false)

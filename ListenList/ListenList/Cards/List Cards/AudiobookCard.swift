@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct AudiobookCard: View {
+    @EnvironmentObject var settingsManager: SettingsManager
     var input: Media
     var audiobook: Audiobook?
     var onAdd: (() -> Void)?
@@ -149,6 +150,7 @@ struct AudiobookCard: View {
 
                     RoundedRectangle(cornerRadius: 15.0)
                         .fill(.ultraThinMaterial)
+                        .opacity(settingsManager.glassOpacity.opacityValue)
                 }
                 .blur(radius: 4.2)
                 .allowsHitTesting(false)

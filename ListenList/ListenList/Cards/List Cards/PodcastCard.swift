@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct PodcastCard: View {
+    @EnvironmentObject var settingsManager: SettingsManager
     var input: Media
     var podcast: Podcast?
     var onAdd: (() -> Void)?
@@ -146,6 +147,7 @@ struct PodcastCard: View {
 
                     RoundedRectangle(cornerRadius: 15.0)
                         .fill(.ultraThinMaterial)
+                        .opacity(settingsManager.glassOpacity.opacityValue)
                 }
                 .blur(radius: 4.2)
                 .allowsHitTesting(false)

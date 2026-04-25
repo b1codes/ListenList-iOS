@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct SongGridCard: View {
+    @EnvironmentObject var settingsManager: SettingsManager
     var input: Media
     var song: Song?
     var onAdd: (() -> Void)?
@@ -164,6 +165,7 @@ struct SongGridCard: View {
 
                     RoundedRectangle(cornerRadius: 15.0)
                         .fill(.ultraThinMaterial)
+                        .opacity(settingsManager.glassOpacity.opacityValue)
                 }
                 .blur(radius: 4.2)
                 .allowsHitTesting(false)
