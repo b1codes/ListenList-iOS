@@ -36,6 +36,7 @@ struct ListenListApp: App {
 
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var authManager = AuthManager()
+    @StateObject private var settingsManager = SettingsManager()
 
     var authURL: String = ""
 
@@ -79,6 +80,7 @@ struct ListenListApp: App {
             }
             .environmentObject(authManager)
             .environmentObject(SearchManager.shared)
+            .environmentObject(settingsManager)
         }
     }
 }
