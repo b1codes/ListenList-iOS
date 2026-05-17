@@ -65,3 +65,11 @@ fastlane/test_output
 ListenList/ListenList/GoogleService-Info.plist
 ListenList/GoogleService-Info.plist
 ListenList/ListenList/GoogleService-Info.plist
+
+# b1CodingTool Generated
+CLAUDE.md
+.claude/
+GEMINI.md
+.gemini/
+.agent/
+agent.md
