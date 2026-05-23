@@ -94,7 +94,7 @@ To run this project, you will need to set up your own Firebase project and Spoti
 
       * Create a new project on the [Firebase Console](https://console.firebase.google.com/).
       * Add an iOS app to your Firebase project.
-      * Download the `GoogleService-Info.plist` file and place it in the `ListenList/ListenList/` directory.
+      * Download the `GoogleService-Info.plist` file and place it in the `frontend/ListenList/` directory.
       * Enable **Firestore Database** in your Firebase project.
 
 2.  **Spotify**
@@ -102,7 +102,7 @@ To run this project, you will need to set up your own Firebase project and Spoti
       * Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
       * Create a new application.
       * Add your Redirect URI (e.g., `listenlist://callback`) to the application settings.
-      * In the project directory, rename `Sample.xcconfig` to `Config.xcconfig` (or create it) inside the `ListenList/` folder with the following:
+      * In the project directory, rename `Sample.xcconfig` to `Config.xcconfig` (or create it) inside the `frontend/` folder with the following:
         ```
         SPOTIFY_API_CLIENT_ID = YOUR_SPOTIFY_CLIENT_ID
         SPOTIFY_API_CLIENT_SECRET = YOUR_SPOTIFY_CLIENT_SECRET

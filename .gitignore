@@ -62,9 +62,9 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
-ListenList/ListenList/GoogleService-Info.plist
-ListenList/GoogleService-Info.plist
-ListenList/ListenList/GoogleService-Info.plist
+frontend/ListenList/GoogleService-Info.plist
+frontend/GoogleService-Info.plist
+frontend/ListenList/GoogleService-Info.plist
 
 # b1CodingTool Generated
 CLAUDE.md
