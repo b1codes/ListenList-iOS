@@ -10,6 +10,7 @@
 		71C478882E3D90FC00BBCF6E /* KeychainSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 71C478872E3D90FC00BBCF6E /* KeychainSwift */; };
 		CA8463002D277F9D005BB9DC /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CA8462FF2D277F9D005BB9DC /* FirebaseCore */; };
 		CA8463082D277F9D005BB9DC /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = CA8463072D277F9D005BB9DC /* FirebaseFirestore */; };
+		F585B894B9682AB9A15EB0A0 /* Auth0 in Frameworks */ = {isa = PBXBuildFile; productRef = 052F45BE0BCDFAF994D41728 /* Auth0 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,6 +77,7 @@
 				CA8463082D277F9D005BB9DC /* FirebaseFirestore in Frameworks */,
 				CA8463002D277F9D005BB9DC /* FirebaseCore in Frameworks */,
 				71C478882E3D90FC00BBCF6E /* KeychainSwift in Frameworks */,
+				F585B894B9682AB9A15EB0A0 /* Auth0 in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,6 +218,7 @@
 			packageReferences = (
 				CA8462E62D277D46005BB9DC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				71C478862E3D90FC00BBCF6E /* XCRemoteSwiftPackageReference "keychain-swift" */,
+				D203117B637197BEEB921DAA /* XCRemoteSwiftPackageReference "Auth0.swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CA02F9EB2CB9AE2B0027BD8B /* Products */;
@@ -604,6 +607,14 @@
 				minimumVersion = 11.6.0;
 			};
 		};
+		D203117B637197BEEB921DAA /* XCRemoteSwiftPackageReference "Auth0.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/auth0/Auth0.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -621,6 +632,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CA8462E62D277D46005BB9DC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		052F45BE0BCDFAF994D41728 /* Auth0 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D203117B637197BEEB921DAA /* XCRemoteSwiftPackageReference "Auth0.swift" */;
+			productName = Auth0;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

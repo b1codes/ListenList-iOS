@@ -10,5 +10,11 @@
 	<string>$(SPOTIFY_API_CLIENT_ID)</string>
 	<key>SPOTIFY_API_CLIENT_SECRET</key>
 	<string>$(SPOTIFY_API_CLIENT_SECRET)</string>
+	<key>AUTH0_DOMAIN</key>
+	<string>$(AUTH0_DOMAIN)</string>
+	<key>AUTH0_CLIENT_ID</key>
+	<string>$(AUTH0_CLIENT_ID)</string>
+	<key>BACKEND_BASE_URL</key>
+	<string>$(BACKEND_BASE_URL)</string>
 </dict>
 </plist>
