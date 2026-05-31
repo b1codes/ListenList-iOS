@@ -735,8 +735,7 @@ struct SearchManagerTests {
     }
 
     @Test @MainActor func initialSearchByIsAlbum() {
-        // 0 = Album per SearchManager definition
-        #expect(SearchManager.shared.searchBy == 0)
+        #expect(SearchManager.shared.searchBy == .album)
     }
 }
 
@@ -788,6 +787,12 @@ final class MockDatabaseService: DatabaseService {
         deletedAudiobookIds.append(id)
         completion(shouldFailDelete ? NSError(domain: "test", code: 1) : nil)
     }
+
+    func addSong(song: Song, completion: @escaping (Error?) -> Void) { completion(nil) }
+    func addAlbum(album: Album, showOnList: Bool, completion: @escaping (Error?) -> Void) { completion(nil) }
+    func addArtist(artist: Artist, showOnList: Bool, completion: @escaping (Error?) -> Void) { completion(nil) }
+    func addPodcast(podcast: Podcast, completion: @escaping (Error?) -> Void) { completion(nil) }
+    func addAudiobook(audiobook: Audiobook, completion: @escaping (Error?) -> Void) { completion(nil) }
 }
 
 // MARK: - ListManager Tests
@@ -982,5 +987,49 @@ struct ListManagerTests {
 
         #expect(manager.completedCards.isEmpty)
         #expect(mock.deletedSongIds == ["done"])
+    }
+}
+
+// MARK: - SessionResponse Tests
+
+@Suite("SessionResponse JSON Decoding")
+struct SessionResponseTests {
+
+    private let decoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.keyDecodingStrategy = .convertFromSnakeCase
+        return d
+    }()
+
+    @Test func sessionResponseDecodesFullPayload() throws {
+        let json = """
+        {
+            "access_token": "header.payload.sig",
+            "token_type": "bearer",
+            "user_id": "abc12345678901234567",
+            "email": "user@example.com",
+            "spotify_linked": false
+        }
+        """
+        let result = try decoder.decode(SessionResponse.self, from: Data(json.utf8))
+        #expect(result.accessToken == "header.payload.sig")
+        #expect(result.tokenType == "bearer")
+        #expect(result.userId == "abc12345678901234567")
+        #expect(result.email == "user@example.com")
+        #expect(result.spotifyLinked == false)
+    }
+
+    @Test func sessionResponseNilEmailDecodes() throws {
+        let json = """
+        {
+            "access_token": "tok",
+            "token_type": "bearer",
+            "user_id": "uid1",
+            "spotify_linked": true
+        }
+        """
+        let result = try decoder.decode(SessionResponse.self, from: Data(json.utf8))
+        #expect(result.email == nil)
+        #expect(result.spotifyLinked == true)
     }
 }
