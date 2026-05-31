@@ -100,6 +100,9 @@ struct SettingsView: View {
     }
 
     private func fetchUserProfile() {
+        // TODO: Auth migration — accessToken/tokenType are always nil after Auth0 migration.
+        // Spotify profile display needs to be reworked to fetch via the backend
+        // /auth/spotify/status endpoint using the session JWT once Spotify linking is implemented.
         guard let accessToken = authManager.accessToken, let tokenType = authManager.tokenType else {
             self.isLoading = false
             self.errorMessage = "Not authenticated"

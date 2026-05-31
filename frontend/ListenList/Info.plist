@@ -16,5 +16,14 @@
 	<string>$(AUTH0_CLIENT_ID)</string>
 	<key>BACKEND_BASE_URL</key>
 	<string>$(BACKEND_BASE_URL)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

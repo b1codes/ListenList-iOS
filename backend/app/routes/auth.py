@@ -59,6 +59,8 @@ async def login_with_auth0(request: Auth0LoginRequest):
     claims = await verify_auth0_token(request.identity_token)
 
     auth0_sub = claims.get("sub")
+    if not auth0_sub:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing subject claim")
     email = claims.get("email")
     name = claims.get("name", "")
 
