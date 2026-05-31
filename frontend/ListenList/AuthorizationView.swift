@@ -23,6 +23,11 @@ struct AuthorizationView: View {
                     }
                 }
                 .padding(10)
+                .disabled(authManager.isLoading)
+
+                if authManager.isLoading {
+                    ProgressView()
+                }
             }
         }
     }
