@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     SPOTIFY_CLIENT_SECRET: Optional[str] = None
     SPOTIFY_REDIRECT_URI: str = "https://d15girke7x008z.cloudfront.net"
 
+    # Auth0 Configuration
+    AUTH0_DOMAIN: str = ""
+    AUTH0_CLIENT_ID: str = ""
+    AUTH0_AUDIENCE: str = ""
+
     class Config:
         env_file = ".env"
         extra = "ignore"
@@ -49,3 +54,15 @@ if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
     jwt_secret = get_parameter("/listenlist/jwt_secret", secure=True)
     if jwt_secret:
         settings.JWT_SECRET = jwt_secret
+
+    auth0_domain = get_parameter("/listenlist/auth0/domain", secure=False)
+    if auth0_domain:
+        settings.AUTH0_DOMAIN = auth0_domain
+
+    auth0_client_id = get_parameter("/listenlist/auth0/client_id", secure=False)
+    if auth0_client_id:
+        settings.AUTH0_CLIENT_ID = auth0_client_id
+
+    auth0_audience = get_parameter("/listenlist/auth0/audience", secure=False)
+    if auth0_audience:
+        settings.AUTH0_AUDIENCE = auth0_audience
