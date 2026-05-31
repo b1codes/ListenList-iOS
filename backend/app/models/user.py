@@ -22,3 +22,6 @@ class SpotifyConnectRequest(BaseModel):
 class SpotifyStatusResponse(BaseModel):
     spotify_linked: bool
     display_name: Optional[str] = None
+
+class Auth0LoginRequest(BaseModel):
+    identity_token: str
