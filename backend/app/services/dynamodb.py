@@ -19,27 +19,27 @@ class DynamoDBService:
         
         self.table = self.dynamodb.Table(settings.DYNAMODB_TABLE_NAME)
 
-    def create_or_update_user(self, user_id: str, apple_sub: str, email: Optional[str] = None, name: Optional[str] = None) -> Dict[str, Any]:
+    def create_or_update_user(self, user_id: str, provider_sub: str, auth_provider: str, email: Optional[str] = None, name: Optional[str] = None) -> Dict[str, Any]:
         """
         Creates or updates a user profile item (SK = PROFILE).
         """
         pk = f"USER#{user_id}"
         sk = "PROFILE"
-        
-        # Build update expression to avoid overwriting existing fields (like Spotify tokens)
-        update_expr = "SET apple_sub = :apple_sub, entity_type = :entity_type"
+
+        update_expr = "SET provider_sub = :provider_sub, auth_provider = :auth_provider, entity_type = :entity_type"
         expr_attrs = {
-            ":apple_sub": apple_sub,
+            ":provider_sub": provider_sub,
+            ":auth_provider": auth_provider,
             ":entity_type": "user"
         }
-        
+
         if email:
             update_expr += ", email = :email"
             expr_attrs[":email"] = email
         if name:
             update_expr += ", display_name = :name"
             expr_attrs[":name"] = name
-            
+
         try:
             self.table.update_item(
                 Key={"PK": pk, "SK": sk},

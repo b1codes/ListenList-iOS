@@ -33,7 +33,8 @@ async def login_with_apple(request: AppleLoginRequest):
     # 3. Create or update user profile item in DynamoDB
     profile = db_service.create_or_update_user(
         user_id=user_id,
-        apple_sub=apple_sub,
+        provider_sub=apple_sub,
+        auth_provider="apple",
         email=email,
         name=display_name
     )
