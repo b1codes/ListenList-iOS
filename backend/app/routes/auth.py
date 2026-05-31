@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.models.user import AppleLoginRequest, UserSessionResponse, SpotifyConnectRequest, SpotifyStatusResponse
+from app.models.user import AppleLoginRequest, Auth0LoginRequest, UserSessionResponse, SpotifyConnectRequest, SpotifyStatusResponse
 from app.auth.apple import verify_apple_token
+from app.auth.auth0 import verify_auth0_token
 from app.auth.jwt import create_session_token, get_current_user_id
 from app.services.dynamodb import db_service
 from app.services.spotify import spotify_service
@@ -42,6 +43,37 @@ async def login_with_apple(request: AppleLoginRequest):
     # 4. Generate backend session token
     session_jwt = create_session_token(user_id=user_id, email=email)
     
+    return UserSessionResponse(
+        access_token=session_jwt,
+        user_id=user_id,
+        email=email,
+        spotify_linked=profile.get("spotify_linked", False)
+    )
+
+@router.post("/auth0", response_model=UserSessionResponse)
+async def login_with_auth0(request: Auth0LoginRequest):
+    """
+    Validates an Auth0 ID Token and returns a session JWT.
+    Creates or updates the user profile in DynamoDB on first login.
+    """
+    claims = await verify_auth0_token(request.identity_token)
+
+    auth0_sub = claims.get("sub")
+    email = claims.get("email")
+    name = claims.get("name", "")
+
+    user_id = hashlib.sha256(auth0_sub.encode()).hexdigest()[:20]
+
+    profile = db_service.create_or_update_user(
+        user_id=user_id,
+        provider_sub=auth0_sub,
+        auth_provider="auth0",
+        email=email,
+        name=name
+    )
+
+    session_jwt = create_session_token(user_id=user_id, email=email)
+
     return UserSessionResponse(
         access_token=session_jwt,
         user_id=user_id,
