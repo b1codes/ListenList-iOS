@@ -2,171 +2,91 @@
 //  AuthManager.swift
 //  ListenList
 //
-//  Created by Brandon Lamer-Connolly on 8/1/25.
-//
 
 import Foundation
+import Auth0
 import KeychainSwift
 
 class AuthManager: ObservableObject {
 
     @Published var isAuthenticated: Bool = false
-    @Published var isLoading: Bool = true // Start in a loading state
+    @Published var isLoading: Bool = false
 
-    var accessToken: String?
-    var tokenType: String?
+    // Kept for SettingsView Spotify compatibility — nil until Spotify is linked
+    var accessToken: String? = nil
+    var tokenType: String? = nil
 
     private var keychain = KeychainSwift()
 
     init() {
-        // Immediately attempt to refresh the token on launch
-        if keychain.get("refreshToken") != nil {
-            refreshToken()
+        if let token = keychain.get("sessionToken"), !AuthManager.isTokenExpired(token) {
+            isAuthenticated = true
         } else {
-            self.isLoading = false
+            keychain.delete("sessionToken")
         }
     }
 
-    func logIn(with code: String) {
-        self.isLoading = true
-        exchangeCodeForTokens(code: code)
+    @MainActor
+    func login() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let clientId = Bundle.main.object(forInfoDictionaryKey: "AUTH0_CLIENT_ID") as? String ?? ""
+            let domain = Bundle.main.object(forInfoDictionaryKey: "AUTH0_DOMAIN") as? String ?? ""
+
+            let credentials = try await Auth0
+                .webAuth(clientId: clientId, domain: domain)
+                .start()
+
+            let session = try await exchangeTokenWithBackend(idToken: credentials.idToken)
+            keychain.set(session.accessToken, forKey: "sessionToken")
+            isAuthenticated = true
+        } catch {
+            print("Auth0 login failed: \(error.localizedDescription)")
+        }
     }
 
     func logout() {
-        keychain.delete("refreshToken")
-        self.accessToken = nil
-        self.tokenType = nil
-        self.isAuthenticated = false
+        keychain.delete("sessionToken")
+        isAuthenticated = false
+        let clientId = Bundle.main.object(forInfoDictionaryKey: "AUTH0_CLIENT_ID") as? String ?? ""
+        let domain = Bundle.main.object(forInfoDictionaryKey: "AUTH0_DOMAIN") as? String ?? ""
+        Task {
+            try? await Auth0.webAuth(clientId: clientId, domain: domain).clearSession()
+        }
     }
 
-    func refreshToken() {
-        guard let refreshToken = keychain.get("refreshToken") else {
-            // If there's no refresh token, the user needs to log in
-            DispatchQueue.main.async {
-                self.isAuthenticated = false
-                self.isLoading = false
-            }
-            return
+    // Internal static for unit testing
+    static func isTokenExpired(_ token: String) -> Bool {
+        let parts = token.components(separatedBy: ".")
+        guard parts.count == 3 else { return true }
+
+        var base64 = parts[1]
+        let remainder = base64.count % 4
+        if remainder != 0 { base64 += String(repeating: "=", count: 4 - remainder) }
+
+        guard let data = Data(base64Encoded: base64) else { return true }
+
+        struct Payload: Decodable { let exp: TimeInterval }
+        guard let payload = try? JSONDecoder().decode(Payload.self, from: data) else { return true }
+
+        return Date().timeIntervalSince1970 > payload.exp
+    }
+
+    private func exchangeTokenWithBackend(idToken: String) async throws -> SessionResponse {
+        let backendBaseURL = Bundle.main.object(forInfoDictionaryKey: "BACKEND_BASE_URL") as? String ?? ""
+        guard let url = URL(string: "\(backendBaseURL)/auth/auth0") else {
+            throw URLError(.badURL)
         }
 
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = "accounts.spotify.com"
-        components.path = "/api/token"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(["identity_token": idToken])
 
-        var urlRequest = URLRequest(url: components.url!)
-        urlRequest.httpMethod = "POST"
-
-        let spotifyAPIClientID = Bundle.main.object(forInfoDictionaryKey: "SPOTIFY_API_CLIENT_ID") as? String
-        let spotifyAPIClientSecret = Bundle.main.object(forInfoDictionaryKey: "SPOTIFY_API_CLIENT_SECRET") as? String
-
-        let combo = "\(spotifyAPIClientID ?? ""):\(spotifyAPIClientSecret ?? "")"
-        let comboEncoded = combo.data(using: .utf8)?.base64EncodedString()
-
-        urlRequest.allHTTPHeaderFields = ["Authorization": "Basic \(comboEncoded!)", "Content-Type": "application/x-www-form-urlencoded"]
-
-        var bodyComponents = URLComponents()
-        bodyComponents.queryItems = [
-            URLQueryItem(name: "grant_type", value: "refresh_token"),
-            URLQueryItem(name: "refresh_token", value: refreshToken)
-        ]
-
-        urlRequest.httpBody = bodyComponents.query?.data(using: .utf8)
-
-        URLSession.shared.dataTask(with: urlRequest) { data, response, error in
-            DispatchQueue.main.async {
-                 if let error = error {
-                    print("Error refreshing token: \(error.localizedDescription)")
-                    self.isAuthenticated = false
-                    self.isLoading = false
-                    return
-                }
-
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    print("Invalid response when refreshing token")
-                    self.isAuthenticated = false
-                    self.isLoading = false
-                    return
-                }
-
-                if (200...299).contains(httpResponse.statusCode) {
-                    if let data = data {
-                        let decoder = JSONDecoder()
-                        decoder.keyDecodingStrategy = .convertFromSnakeCase
-                        if let accessTokenResponse = try? decoder.decode(AccessTokenResponse.self, from: data) {
-                            self.accessToken = accessTokenResponse.accessToken
-                            self.tokenType = accessTokenResponse.tokenType
-
-                            if let newRefreshToken = accessTokenResponse.refreshToken {
-                                self.keychain.set(newRefreshToken, forKey: "refreshToken")
-                            }
-                            self.isLoading = false
-                            self.isAuthenticated = true
-                        }
-                    } else {
-                        self.isAuthenticated = false
-                    }
-                } else {
-                     print("Error refreshing token. Status code: \(httpResponse.statusCode)")
-                    if let data = data, let responseString = String(data: data, encoding: .utf8) {
-                        print("Response body: \(responseString)")
-                    }
-                    self.isAuthenticated = false
-                }
-                self.isLoading = false
-            }
-        }.resume()
-    }
-
-    private func exchangeCodeForTokens(code: String) {
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = "accounts.spotify.com"
-        components.path = "/api/token"
-
-        var urlRequest = URLRequest(url: components.url!)
-        urlRequest.httpMethod = "POST"
-
-        let spotifyAPIClientID = Bundle.main.object(forInfoDictionaryKey: "SPOTIFY_API_CLIENT_ID") as? String
-        let spotifyAPIClientSecret = Bundle.main.object(forInfoDictionaryKey: "SPOTIFY_API_CLIENT_SECRET") as? String
-
-        let combo = "\(spotifyAPIClientID ?? ""):\(spotifyAPIClientSecret ?? "")"
-        let comboEncoded = combo.data(using: .utf8)?.base64EncodedString()
-
-        urlRequest.allHTTPHeaderFields = ["Authorization": "Basic \(comboEncoded!)", "Content-Type": "application/x-www-form-urlencoded"]
-
-        let redirectURIHost = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_HOST") as? String
-        let redirectURIScheme = Bundle.main.object(forInfoDictionaryKey: "REDIRECT_URI_SCHEME") as? String
-        let redirectURI = "\(redirectURIScheme ?? "")://\(redirectURIHost ?? "")"
-
-        var bodyComponents = URLComponents()
-        bodyComponents.queryItems = [
-            URLQueryItem(name: "grant_type", value: "authorization_code"),
-            URLQueryItem(name: "code", value: code),
-            URLQueryItem(name: "redirect_uri", value: redirectURI)
-        ]
-
-        urlRequest.httpBody = bodyComponents.query?.data(using: .utf8)
-
-        URLSession.shared.dataTask(with: urlRequest) { data, _, _ in
-            DispatchQueue.main.async {
-                self.isLoading = false
-                if let data = data {
-                    let decoder = JSONDecoder()
-                    decoder.keyDecodingStrategy = .convertFromSnakeCase
-                    if let accessTokenResponse = try? decoder.decode(AccessTokenResponse.self, from: data) {
-
-                        self.accessToken = accessTokenResponse.accessToken
-                        self.tokenType = accessTokenResponse.tokenType
-                        if let refreshToken = accessTokenResponse.refreshToken {
-                            self.keychain.set(refreshToken, forKey: "refreshToken")
-                        }
-                        self.isAuthenticated = true
-                    }
-                } else {
-                    self.isAuthenticated = false
-                }
-            }
-        }.resume()
+        let (data, _) = try await URLSession.shared.data(for: request)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(SessionResponse.self, from: data)
     }
 }

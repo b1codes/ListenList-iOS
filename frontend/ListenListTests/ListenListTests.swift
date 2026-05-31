@@ -1033,3 +1033,44 @@ struct SessionResponseTests {
         #expect(result.spotifyLinked == true)
     }
 }
+
+// MARK: - AuthManager JWT Helper Tests
+
+@Suite("AuthManager.isTokenExpired")
+struct AuthManagerJWTTests {
+
+    private func makeJWT(expOffset: TimeInterval) -> String {
+        let exp = Int(Date().timeIntervalSince1970 + expOffset)
+        let header = Data(#"{"alg":"RS256","typ":"JWT"}"#.utf8).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .trimmingCharacters(in: .init(charactersIn: "="))
+        let payload = Data("{\"sub\":\"test|123\",\"exp\":\(exp)}".utf8).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .trimmingCharacters(in: .init(charactersIn: "="))
+        return "\(header).\(payload).fakesig"
+    }
+
+    @Test func validFutureTokenIsNotExpired() {
+        let token = makeJWT(expOffset: 3600)
+        #expect(AuthManager.isTokenExpired(token) == false)
+    }
+
+    @Test func pastTokenIsExpired() {
+        let token = makeJWT(expOffset: -1)
+        #expect(AuthManager.isTokenExpired(token) == true)
+    }
+
+    @Test func twoPartStringIsExpired() {
+        #expect(AuthManager.isTokenExpired("only.two") == true)
+    }
+
+    @Test func emptyStringIsExpired() {
+        #expect(AuthManager.isTokenExpired("") == true)
+    }
+
+    @Test func invalidBase64PayloadIsExpired() {
+        #expect(AuthManager.isTokenExpired("header.!!!invalid!!!.sig") == true)
+    }
+}
