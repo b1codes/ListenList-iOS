@@ -80,6 +80,8 @@ __pycache__/
 *.pyo
 *.pyd
 .env
+backend/build/
+backend/function.zip
 
 # Terraform
 .terraform/

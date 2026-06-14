@@ -30,3 +30,25 @@ resource "aws_ssm_parameter" "jwt_secret" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "auth0_domain" {
+  name        = "/${var.app_name}/${var.environment}/auth0/domain"
+  description = "Auth0 tenant domain"
+  type        = "String"
+  value       = "PLACEHOLDER_AUTH0_DOMAIN"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "auth0_client_id" {
+  name        = "/${var.app_name}/${var.environment}/auth0/client_id"
+  description = "Auth0 iOS native app client ID"
+  type        = "String"
+  value       = "PLACEHOLDER_AUTH0_CLIENT_ID"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

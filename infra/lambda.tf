@@ -1,13 +1,3 @@
-# ECR Repository to store backend Docker images
-resource "aws_ecr_repository" "backend_repo" {
-  name                 = "${var.app_name}-backend"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-}
-
 # IAM Role for Lambda execution
 resource "aws_iam_role" "lambda_role" {
   name = "${var.app_name}-${var.environment}-lambda-role"
@@ -113,22 +103,21 @@ resource "aws_iam_role_policy_attachment" "lambda_ssm_params" {
   policy_arn = aws_iam_policy.lambda_ssm.arn
 }
 
-# The AWS Lambda function utilizing the Docker container image
-# Note: In initial setup, you must push a bootstrap image to the ECR repo before running terraform apply
-# OR deploy with a mock base image and update later.
 resource "aws_lambda_function" "api_lambda" {
-  function_name = "${var.app_name}-${var.environment}-api"
-  role          = aws_iam_role.lambda_role.arn
-  package_type  = "Image"
-  image_uri     = "${aws_ecr_repository.backend_repo.repository_url}:latest"
-  timeout       = 30
-  memory_size   = 512
+  function_name    = "${var.app_name}-${var.environment}-api"
+  role             = aws_iam_role.lambda_role.arn
+  package_type     = "Zip"
+  runtime          = "python3.11"
+  handler          = "app.main.handler"
+  filename         = "${path.module}/../backend/function.zip"
+  source_code_hash = filebase64sha256("${path.module}/../backend/function.zip")
+  timeout          = 30
+  memory_size      = 512
 
   environment {
     variables = {
-      ENV                  = var.environment
-      DYNAMODB_TABLE_NAME  = aws_dynamodb_table.listenlist_table.name
-      AWS_REGION           = var.aws_region
+      ENV                 = var.environment
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.listenlist_table.name
     }
   }
 

@@ -42,27 +42,24 @@ if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
             print(f"Error fetching SSM parameter {name}: {e}")
             return None
 
+    env = settings.ENV
     # Fetch secrets securely from SSM Parameter Store
-    spotify_secret = get_parameter("/listenlist/spotify/client_secret", secure=True)
+    spotify_secret = get_parameter(f"/listenlist/{env}/spotify/client_secret", secure=True)
     if spotify_secret:
         settings.SPOTIFY_CLIENT_SECRET = spotify_secret
 
-    spotify_id = get_parameter("/listenlist/spotify/client_id", secure=False)
+    spotify_id = get_parameter(f"/listenlist/{env}/spotify/client_id", secure=False)
     if spotify_id:
         settings.SPOTIFY_CLIENT_ID = spotify_id
 
-    jwt_secret = get_parameter("/listenlist/jwt_secret", secure=True)
+    jwt_secret = get_parameter(f"/listenlist/{env}/jwt_secret", secure=True)
     if jwt_secret:
         settings.JWT_SECRET = jwt_secret
 
-    auth0_domain = get_parameter("/listenlist/auth0/domain", secure=False)
+    auth0_domain = get_parameter(f"/listenlist/{env}/auth0/domain", secure=False)
     if auth0_domain:
         settings.AUTH0_DOMAIN = auth0_domain
 
-    auth0_client_id = get_parameter("/listenlist/auth0/client_id", secure=False)
+    auth0_client_id = get_parameter(f"/listenlist/{env}/auth0/client_id", secure=False)
     if auth0_client_id:
         settings.AUTH0_CLIENT_ID = auth0_client_id
-
-    auth0_audience = get_parameter("/listenlist/auth0/audience", secure=False)
-    if auth0_audience:
-        settings.AUTH0_AUDIENCE = auth0_audience
