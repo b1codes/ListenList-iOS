@@ -10,6 +10,7 @@ struct ArtistDetailView: View {
     @State private var topTracks: [Song] = []
     @State private var albums: [Album] = []
     @State private var isLoading = true
+    @State private var isAdding = false
 
     var body: some View {
         ScrollView {
@@ -61,19 +62,23 @@ struct ArtistDetailView: View {
                 Divider()
 
                 if !listManager.isItemInList(id: artist.id) {
-                    Button(action: {
-                        listManager.add(media: Media(input: .artist(artist)))
-                    }) {
-                        Label("Add to Library", systemImage: "plus.circle")
-                            .bold()
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.accentColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
+                    Button(action: addToLibrary) {
+                        HStack {
+                            if isAdding {
+                                ProgressView().tint(.white)
+                            }
+                            Label("Add to Library", systemImage: "plus.circle")
+                                .bold()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                     }
+                    .disabled(isAdding)
                     .padding(.horizontal)
-                    
+
                     Divider()
                 }
 
@@ -184,6 +189,13 @@ struct ArtistDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             fetchArtistContent()
+        }
+    }
+
+    private func addToLibrary() {
+        isAdding = true
+        listManager.add(media: Media(input: .artist(artist))) { _ in
+            isAdding = false
         }
     }
 

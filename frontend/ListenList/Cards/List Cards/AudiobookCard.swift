@@ -11,7 +11,9 @@ struct AudiobookCard: View {
     var onDelete: (() -> Void)?
     var isSaved: Bool
 
-    let maxHeight: CGFloat = 120
+    // Floor, not a cap: rows must be able to grow past this at larger
+    // Dynamic Type sizes rather than clip title/artist text.
+    let minHeight: CGFloat = 120
 
     init(input: Media, onAdd: (() -> Void)? = nil, isInEditMode: Bool = false, onDelete: (() -> Void)? = nil, isSaved: Bool = false) {
         self.input = input
@@ -43,11 +45,7 @@ struct AudiobookCard: View {
     }
 
     var body: some View {
-        guard let audiobook = audiobook else {
-            return AnyView(EmptyView())
-        }
-
-        return AnyView(
+        if let audiobook = audiobook {
             ZStack(alignment: .leading) {
                 HStack(spacing: 15) {
                     // Audiobook Art
@@ -76,7 +74,7 @@ struct AudiobookCard: View {
                         }
                         Text(authorsToStr())
                             .lineLimit(1)
-                            .opacity(0.8)
+                            .foregroundColor(.white.opacity(0.8))
 
                         if audiobook.isCompleted ?? false {
                             HStack(spacing: 2) {
@@ -90,6 +88,8 @@ struct AudiobookCard: View {
                             }
                         }
                     }
+                    .foregroundColor(.white)
+                    .cardTextShadow()
 
                     Spacer()
 
@@ -97,14 +97,18 @@ struct AudiobookCard: View {
                         if isSaved {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.title)
-                                .foregroundColor(.black)
+                                .foregroundColor(.accentColor)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .accessibilityLabel("Added to ListenList")
                         } else {
                             Button(action: onAdd) {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.title)
-                                    .foregroundColor(Color.black)
-
+                                    .foregroundColor(.accentColor)
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .contentShape(Rectangle())
                             }
+                            .accessibilityLabel("Add to ListenList")
                         }
                     }
                 }
@@ -116,49 +120,21 @@ struct AudiobookCard: View {
                     .fontWeight(.bold)
                     .fixedSize()
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 20, height: maxHeight)
+                    .frame(width: 20)
                     .padding(.leading, 8)
+                    .foregroundColor(.white)
+                    .cardTextShadow()
 
                 if isInEditMode {
-                    ZStack {
-                        Color.gray.opacity(0.6)
-                        if let onDelete = onDelete {
-                            Button(action: onDelete) {
-                                Image(systemName: "trash.circle.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.red)
-
-                            }
-                        }
-                    }
+                    EditModeOverlay(onDelete: onDelete)
                 }
             }
-            .frame(maxWidth: 600, maxHeight: maxHeight)
-            .background(
-                ZStack {
-                    if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
-                        CachedAsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Color.gray
-                        }
-                    } else {
-                        Color.gray
-                    }
-
-                    RoundedRectangle(cornerRadius: 15.0)
-                        .fill(.ultraThinMaterial)
-                        .opacity(settingsManager.glassOpacity.opacityValue)
-                }
-                .blur(radius: 4.2)
-                .allowsHitTesting(false)
-            )
-            .cornerRadius(15.0)
-            .clipped()
+            .frame(maxWidth: 600, minHeight: minHeight)
+            .cardGlassBackground(imageUrl: audiobook.images.medium(), glassOpacity: settingsManager.glassOpacity.opacityValue)
             .padding([.leading, .trailing], 10)
-        )
+        } else {
+            EmptyView()
+        }
     }
 }
 

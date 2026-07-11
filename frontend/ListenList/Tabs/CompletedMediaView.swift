@@ -4,12 +4,24 @@ import SwiftUI
 
 struct CompletedMediaView: View {
     @EnvironmentObject var listManager: ListManager
+    @EnvironmentObject var tabSelection: TabSelectionManager
     @State private var isGridView = false
     @State private var filterType: CardType?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var filteredCards: [Card] {
         guard let filterType = filterType else { return listManager.completedCards }
         return listManager.completedCards.filter { $0.type == filterType }
+    }
+
+    private func pluralLabel(for cardType: CardType) -> String {
+        switch cardType {
+        case .song: return "Songs"
+        case .album: return "Albums"
+        case .artist: return "Artists"
+        case .podcast: return "Podcasts"
+        case .audiobook: return "Audiobooks"
+        }
     }
 
     var body: some View {
@@ -17,23 +29,65 @@ struct CompletedMediaView: View {
             ScrollView {
                 VStack {
                     if listManager.isLoading {
-                        ProgressView("Loading...")
+                        SkeletonCardListView()
                     } else if filteredCards.isEmpty {
-                        VStack(spacing: 12) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(.secondary)
-                            Text("No completed items yet.")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            if filterType != nil {
+                        if let filterType {
+                            VStack(spacing: 12) {
+                                Image(systemName: "line.3.horizontal.decrease.circle")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.secondary)
+                                Text("No \(pluralLabel(for: filterType).lowercased()) completed yet.")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
                                 Button("Clear Filter") {
-                                    filterType = nil
+                                    self.filterType = nil
                                 }
                                 .buttonStyle(.bordered)
                             }
+                            .padding(.top, 100)
+                        } else if listManager.cards.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.secondary)
+                                Text("Nothing completed yet")
+                                    .font(.headline)
+                                Text("Search for a song, album, podcast, or audiobook, add it to your ListenList, then log it here when you finish it.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 32)
+                                Button {
+                                    tabSelection.selected = .search
+                                } label: {
+                                    Label("Search to Get Started", systemImage: "magnifyingglass")
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .padding(.top, 4)
+                            }
+                            .padding(.top, 80)
+                        } else {
+                            VStack(spacing: 12) {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.secondary)
+                                Text("Nothing completed yet")
+                                    .font(.headline)
+                                Text("Rate and log something from your ListenList when you finish it, and it'll show up here.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 32)
+                                Button {
+                                    tabSelection.selected = .home
+                                } label: {
+                                    Label("Go to Your ListenList", systemImage: "play.house.fill")
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .padding(.top, 4)
+                            }
+                            .padding(.top, 80)
                         }
-                        .padding(.top, 100)
                     } else {
                         if isGridView {
                             CardGrid(results: filteredCards)
@@ -50,7 +104,7 @@ struct CompletedMediaView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.65)) {
                             isGridView.toggle()
                         }
                     } label: {

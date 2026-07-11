@@ -6,9 +6,11 @@ import FirebaseFirestore
 struct ListenListView: View {
 
     @EnvironmentObject var listManager: ListManager
+    @EnvironmentObject var tabSelection: TabSelectionManager
     @State private var isInEditMode = false
     @State private var isGridView = false
     @State private var filterType: CardType?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Namespace private var namespace
 
@@ -17,28 +19,59 @@ struct ListenListView: View {
         return listManager.cards.filter { $0.type == filterType }
     }
 
+    private func pluralLabel(for cardType: CardType) -> String {
+        switch cardType {
+        case .song: return "Songs"
+        case .album: return "Albums"
+        case .artist: return "Artists"
+        case .podcast: return "Podcasts"
+        case .audiobook: return "Audiobooks"
+        }
+    }
+
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack {
                     if listManager.isLoading {
-                        ProgressView("Loading...")
+                        SkeletonCardListView()
                     } else if filteredCards.isEmpty {
-                        VStack(spacing: 12) {
-                            Image(systemName: "tray.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(.secondary)
-                            Text("No items found.")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            if filterType != nil {
+                        if let filterType {
+                            VStack(spacing: 12) {
+                                Image(systemName: "line.3.horizontal.decrease.circle")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.secondary)
+                                Text("No \(pluralLabel(for: filterType).lowercased()) in your ListenList.")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
                                 Button("Clear Filter") {
-                                    filterType = nil
+                                    self.filterType = nil
                                 }
                                 .buttonStyle(.bordered)
                             }
+                            .padding(.top, 100)
+                        } else {
+                            VStack(spacing: 12) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.secondary)
+                                Text("Nothing in your ListenList yet")
+                                    .font(.headline)
+                                Text("Search for a song, album, podcast, or audiobook, then add it here to build your queue.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 32)
+                                Button {
+                                    tabSelection.selected = .search
+                                } label: {
+                                    Label("Search to Get Started", systemImage: "magnifyingglass")
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .padding(.top, 4)
+                            }
+                            .padding(.top, 80)
                         }
-                        .padding(.top, 100)
                     } else {
                         if isGridView {
                             CardGrid(results: filteredCards, isInEditMode: isInEditMode, onDelete: listManager.delete)
@@ -55,7 +88,7 @@ struct ListenListView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.65)) {
                             isGridView.toggle()
                         }
                     } label: {
@@ -93,7 +126,7 @@ struct ListenListView: View {
                         }
 
                         Button {
-                            withAnimation {
+                            withAnimation(reduceMotion ? nil : .default) {
                                 isInEditMode.toggle()
                             }
                         } label: {

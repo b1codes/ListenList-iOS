@@ -25,7 +25,9 @@ struct AudiobookGridCard: View {
         self.onDelete = onDelete
     }
 
-    private var currentMaxHeight: CGFloat {
+    // Floor, not a cap: cards must be able to grow past this at larger
+    // Dynamic Type sizes rather than clip title/artist text.
+    private var minCardHeight: CGFloat {
         (audiobook?.isCompleted ?? false) ? 290 : 270
     }
     
@@ -52,11 +54,7 @@ struct AudiobookGridCard: View {
     }
 
     var body: some View {
-        guard let audiobook = audiobook else {
-            return AnyView(EmptyView())
-        }
-
-        return AnyView(
+        if let audiobook = audiobook {
             ZStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -64,7 +62,8 @@ struct AudiobookGridCard: View {
                         Text("AUDIOBOOK")
                             .font(.caption)
                             .fontWeight(.bold)
-                            .opacity(0.8)
+                            .foregroundColor(.white.opacity(0.8))
+                            .cardTextShadow()
                         Spacer()
                     }
                     .padding(.top, topPadding)
@@ -102,7 +101,7 @@ struct AudiobookGridCard: View {
                         }
                         Text(authorsToStr())
                             .lineLimit(1)
-                            .opacity(0.8)
+                            .foregroundColor(.white.opacity(0.8))
 
                         HStack(spacing: 2) {
                             if let rating = audiobook.rating, audiobook.isCompleted ?? false {
@@ -117,7 +116,10 @@ struct AudiobookGridCard: View {
                                     .foregroundColor(.clear)
                             }
                         }
-                    }.padding(.horizontal, 6)
+                    }
+                    .padding(.horizontal, 6)
+                    .foregroundColor(.white)
+                    .cardTextShadow()
                     Spacer()
 
                     if let onAdd = onAdd {
@@ -126,7 +128,11 @@ struct AudiobookGridCard: View {
                             Button(action: onAdd) {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.title)
+                                    .foregroundColor(.accentColor)
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .contentShape(Rectangle())
                             }
+                            .accessibilityLabel("Add to ListenList")
                             Spacer()
                         }
                     }
@@ -135,44 +141,15 @@ struct AudiobookGridCard: View {
                 .padding(.bottom, 4)
 
                 if isInEditMode {
-                    ZStack {
-                        Color.gray.opacity(0.6)
-                        if let onDelete = onDelete {
-                            Button(action: onDelete) {
-                                Image(systemName: "trash.circle.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.red)
-                            }
-                        }
-                    }
+                    EditModeOverlay(onDelete: onDelete)
                 }
             }
-            .frame(maxWidth: 185, maxHeight: currentMaxHeight)
-            .background(
-                ZStack {
-                    if let imageUrl = audiobook.images.medium(), let url = URL(string: imageUrl) {
-                        CachedAsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Color.gray
-                        }
-                    } else {
-                        Color.gray
-                    }
-
-                    RoundedRectangle(cornerRadius: 15.0)
-                        .fill(.ultraThinMaterial)
-                        .opacity(settingsManager.glassOpacity.opacityValue)
-                }
-                .blur(radius: 4.2)
-                .allowsHitTesting(false)
-            )
-            .cornerRadius(15.0)
-            .clipped()
+            .frame(maxWidth: 185, minHeight: minCardHeight)
+            .cardGlassBackground(imageUrl: audiobook.images.medium(), glassOpacity: settingsManager.glassOpacity.opacityValue)
             .padding([.leading, .trailing], 10)
-        )
+        } else {
+            EmptyView()
+        }
     }
 }
 

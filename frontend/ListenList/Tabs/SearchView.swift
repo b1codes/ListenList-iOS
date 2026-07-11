@@ -17,6 +17,7 @@ struct SearchView: View {
     @State private var isLoading = false
     @State private var isLoadingSuggestions = false
     @State private var currentSearchTask: Task<Void, Never>?
+    @State private var searchErrorMessage: String?
 
     init(access: String, type: String, searchText: Binding<String>) {
         self.accessToken = access
@@ -243,6 +244,7 @@ struct SearchView: View {
             }
         } catch {
             print("Error during search: \(error)")
+            searchErrorMessage = "Search failed. Check your connection and try again. \(error.localizedDescription)"
         }
         return []
     }
@@ -285,9 +287,9 @@ struct SearchView: View {
                 .padding()
 
                 if isLoading {
-                    ProgressView("Searching...").padding()
+                    SkeletonCardListView(count: 4)
                 } else if isLoadingSuggestions && searchText.isEmpty {
-                    ProgressView("Loading Suggestions...").padding()
+                    SkeletonCardListView(count: 4)
                 }
 
                 let currentListenListIDs = Set(listManager.cards.map { $0.id } + listManager.completedCards.map { $0.id })
@@ -331,6 +333,17 @@ struct SearchView: View {
                     }
                 }
             }
+        }
+        .alert(
+            "Something Went Wrong",
+            isPresented: Binding(
+                get: { searchErrorMessage != nil },
+                set: { isPresented in if !isPresented { searchErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(searchErrorMessage ?? "")
         }
     }
 }

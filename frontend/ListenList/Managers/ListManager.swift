@@ -1,12 +1,14 @@
 // ListenList/ListenList/Managers/ListManager.swift
 
 import SwiftUI
+import UIKit
 
 @MainActor
 class ListManager: ObservableObject {
     @Published var cards: [Card] = []
     @Published var completedCards: [Card] = []
     @Published var isLoading = false
+    @Published var errorMessage: String?
 
     private var songs: [Song] = []
     private var albums: [Album] = []
@@ -90,37 +92,40 @@ class ListManager: ObservableObject {
         return cards.contains { $0.id == id } || completedCards.contains { $0.id == id }
     }
 
-    func add(media: Media) {
+    func add(media: Media, completion: ((Error?) -> Void)? = nil) {
         switch media.input {
         case .song(let song):
             db.addSong(song: song) { [weak self] error in
-                self?.handleAddResult(error: error)
+                self?.handleAddResult(error: error, completion: completion)
             }
         case .album(let album):
             db.addAlbum(album: album, showOnList: true) { [weak self] error in
-                self?.handleAddResult(error: error)
+                self?.handleAddResult(error: error, completion: completion)
             }
         case .artist(let artist):
             db.addArtist(artist: artist, showOnList: true) { [weak self] error in
-                self?.handleAddResult(error: error)
+                self?.handleAddResult(error: error, completion: completion)
             }
         case .podcast(let podcast):
             db.addPodcast(podcast: podcast) { [weak self] error in
-                self?.handleAddResult(error: error)
+                self?.handleAddResult(error: error, completion: completion)
             }
         case .audiobook(let audiobook):
             db.addAudiobook(audiobook: audiobook) { [weak self] error in
-                self?.handleAddResult(error: error)
+                self?.handleAddResult(error: error, completion: completion)
             }
         }
     }
 
-    private func handleAddResult(error: Error?) {
+    private func handleAddResult(error: Error?, completion: ((Error?) -> Void)? = nil) {
         if let error = error {
             print("Error adding item: \(error.localizedDescription)")
+            errorMessage = "Couldn't add that to your ListenList. \(error.localizedDescription)"
+            completion?(error)
         } else {
             Task { @MainActor in
                 await self.fetchListenList(forceReload: true)
+                completion?(nil)
             }
         }
     }
@@ -164,7 +169,7 @@ class ListManager: ObservableObject {
 
     func delete(card: Card) {
         // Optimistic delete: remove immediately from UI, roll back on error
-        withAnimation {
+        withAnimation(UIAccessibility.isReduceMotionEnabled ? nil : .default) {
             cards.removeAll { $0.id == card.id }
             completedCards.removeAll { $0.id == card.id }
 
@@ -182,35 +187,50 @@ class ListManager: ObservableObject {
             db.deleteSong(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting song: \(error.localizedDescription)")
-                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in
+                        self.errorMessage = "Couldn't delete that item. It's been restored to your ListenList. \(error.localizedDescription)"
+                        await self.fetchListenList(forceReload: true)
+                    }
                 }
             }
         case .album:
             db.removeAlbumFromList(withId: card.id) { error in
                 if let error = error {
                     print("Error updating album: \(error.localizedDescription)")
-                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in
+                        self.errorMessage = "Couldn't delete that item. It's been restored to your ListenList. \(error.localizedDescription)"
+                        await self.fetchListenList(forceReload: true)
+                    }
                 }
             }
         case .artist:
             db.removeArtistFromList(withId: card.id) { error in
                 if let error = error {
                     print("Error updating artist: \(error.localizedDescription)")
-                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in
+                        self.errorMessage = "Couldn't delete that item. It's been restored to your ListenList. \(error.localizedDescription)"
+                        await self.fetchListenList(forceReload: true)
+                    }
                 }
             }
         case .podcast:
             db.deletePodcast(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting podcast: \(error.localizedDescription)")
-                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in
+                        self.errorMessage = "Couldn't delete that item. It's been restored to your ListenList. \(error.localizedDescription)"
+                        await self.fetchListenList(forceReload: true)
+                    }
                 }
             }
         case .audiobook:
             db.deleteAudiobook(withId: card.id) { error in
                 if let error = error {
                     print("Error deleting audiobook: \(error.localizedDescription)")
-                    Task { @MainActor in await self.fetchListenList(forceReload: true) }
+                    Task { @MainActor in
+                        self.errorMessage = "Couldn't delete that item. It's been restored to your ListenList. \(error.localizedDescription)"
+                        await self.fetchListenList(forceReload: true)
+                    }
                 }
             }
         }

@@ -59,7 +59,7 @@ struct SettingsView: View {
                         .padding(.vertical, 8)
                     } else if let error = errorMessage {
                         Text(error)
-                            .foregroundColor(.red)
+                            .foregroundColor(.destructiveRed)
                     }
                 }
 
@@ -86,7 +86,7 @@ struct SettingsView: View {
                         HStack {
                             Spacer()
                             Text("Log Out")
-                                .foregroundColor(.red)
+                                .foregroundColor(.destructiveRed)
                             Spacer()
                         }
                     }

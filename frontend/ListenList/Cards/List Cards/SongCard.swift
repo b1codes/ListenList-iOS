@@ -22,7 +22,9 @@ struct SongCard: View {
         self.isSaved = isSaved
     }
 
-    let maxHeight: CGFloat = 120
+    // Floor, not a cap: rows must be able to grow past this at larger
+    // Dynamic Type sizes rather than clip title/artist text.
+    let minHeight: CGFloat = 120
 
     private func artistsToStr() -> String {
         guard let artists = song?.artists, !artists.isEmpty else { return "Unknown Artist" }
@@ -38,11 +40,7 @@ struct SongCard: View {
     }
 
     var body: some View {
-        guard let song = song else {
-            return AnyView(EmptyView())
-        }
-
-        return AnyView(
+        if let song = song {
             ZStack(alignment: .leading) {
                 // MARK: - Layer 1: Foreground Content
                 HStack(spacing: 15) {
@@ -74,7 +72,7 @@ struct SongCard: View {
                         }
                         Text(artistsToStr())
                             .lineLimit(1)
-                            .opacity(0.8)
+                            .foregroundColor(.white.opacity(0.8))
 
                         if song.isCompleted ?? false {
                             HStack(spacing: 2) {
@@ -88,6 +86,8 @@ struct SongCard: View {
                             }
                         }
                     }
+                    .foregroundColor(.white)
+                    .cardTextShadow()
 
                     Spacer()
 
@@ -96,13 +96,18 @@ struct SongCard: View {
                         if isSaved {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.title)
-                                .foregroundColor(.black)
+                                .foregroundColor(.accentColor)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .accessibilityLabel("Added to ListenList")
                         } else {
                             Button(action: onAdd) {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.title)
-                                    .foregroundColor(Color.black)
+                                    .foregroundColor(.accentColor)
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .contentShape(Rectangle())
                             }
+                            .accessibilityLabel("Add to ListenList")
                         }
                     }
                 }
@@ -116,50 +121,21 @@ struct SongCard: View {
                     .fontWeight(.bold)
                     .fixedSize()
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 20, height: maxHeight)
+                    .frame(width: 20)
                     .padding(.leading, 8)
+                    .foregroundColor(.white)
+                    .cardTextShadow()
                 // Edit mode overlay
                 if isInEditMode {
-                    ZStack {
-                        Color.gray.opacity(0.6)
-                        if let onDelete = onDelete {
-                            Button(action: onDelete) {
-                                Image(systemName: "trash.circle.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.red)
-                            }
-                        }
-                    }
+                    EditModeOverlay(onDelete: onDelete)
                 }
             }
-            .frame(maxWidth: 600, maxHeight: maxHeight)
-            .background(
-                ZStack {
-                    if let imageUrl = song.album.images.medium(), let url = URL(string: imageUrl) {
-                        CachedAsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Color.gray
-                        }
-                    } else {
-                        Color.gray
-                    }
-
-                    // The RoundedRectangle is now layered on top of the image
-                    // within the background view.
-                    RoundedRectangle(cornerRadius: 15.0)
-                        .fill(.ultraThinMaterial)
-                        .opacity(settingsManager.glassOpacity.opacityValue)
-                }
-                .blur(radius: 4.2)
-                .allowsHitTesting(false)
-            )
-            .cornerRadius(15.0)
-            .clipped()
+            .frame(maxWidth: 600, minHeight: minHeight)
+            .cardGlassBackground(imageUrl: song.album.images.medium(), glassOpacity: settingsManager.glassOpacity.opacityValue)
             .padding([.leading, .trailing], 10)
-        )
+        } else {
+            EmptyView()
+        }
     }
 }
 

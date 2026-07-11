@@ -9,6 +9,9 @@ struct AudiobookDetailView: View {
     @State private var rating = 0
     @State private var comment = ""
     @State private var isAlreadyCompleted = false
+    @State private var isAdding = false
+    @State private var isLogging = false
+    @State private var errorAlertMessage: String?
 
     var body: some View {
         ScrollView {
@@ -72,19 +75,23 @@ struct AudiobookDetailView: View {
                 Divider()
 
                 if !listManager.isItemInList(id: audiobook.id) {
-                    Button(action: {
-                        listManager.add(media: Media(input: .audiobook(audiobook)))
-                    }) {
-                        Label("Add to Library", systemImage: "plus.circle")
-                            .bold()
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.accentColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
+                    Button(action: addToLibrary) {
+                        HStack {
+                            if isAdding {
+                                ProgressView().tint(.white)
+                            }
+                            Label("Add to Library", systemImage: "plus.circle")
+                                .bold()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                     }
+                    .disabled(isAdding)
                     .padding(.horizontal)
-                    
+
                     Divider()
                 }
 
@@ -92,6 +99,7 @@ struct AudiobookDetailView: View {
                     rating: $rating,
                     comment: $comment,
                     isAlreadyCompleted: isAlreadyCompleted,
+                    isSubmitting: isLogging,
                     action: logAsCompleted
                 )
 
@@ -121,14 +129,36 @@ struct AudiobookDetailView: View {
                 self.comment = audiobookComment
             }
         }
+        .alert(
+            "Something Went Wrong",
+            isPresented: Binding(
+                get: { errorAlertMessage != nil },
+                set: { isPresented in if !isPresented { errorAlertMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorAlertMessage ?? "")
+        }
+    }
+
+    private func addToLibrary() {
+        isAdding = true
+        listManager.add(media: Media(input: .audiobook(audiobook))) { _ in
+            isAdding = false
+        }
     }
 
     private func logAsCompleted() {
+        isLogging = true
         DatabaseManager.shared.logAudiobookAsCompleted(withId: audiobook.id, rating: rating, comment: comment) { error in
-            if let error = error {
-                print("Error logging audiobook as completed: \(error.localizedDescription)")
-            } else {
-                Task { @MainActor in
+            Task { @MainActor in
+                isLogging = false
+                if let error = error {
+                    print("Error logging audiobook as completed: \(error.localizedDescription)")
+                    errorAlertMessage = "Couldn't save your rating. \(error.localizedDescription)"
+                } else {
+                    isAlreadyCompleted = true
                     await ListManager.shared.fetchListenList(forceReload: true)
                 }
             }

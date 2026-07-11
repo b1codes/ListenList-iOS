@@ -10,6 +10,9 @@ struct SongDetailView: View {
     @State private var rating = 0
     @State private var comment = ""
     @State private var isAlreadyCompleted = false
+    @State private var isAdding = false
+    @State private var isLogging = false
+    @State private var errorAlertMessage: String?
 
     private func artistsToStr() -> String {
         return song.artists.map { $0.name }.joined(separator: ", ")
@@ -88,18 +91,22 @@ struct SongDetailView: View {
 
                 if !listManager.isItemInList(id: song.id) {
                     Divider()
-                    
-                    Button(action: {
-                        listManager.add(media: Media(input: .song(song)))
-                    }) {
-                        Label("Add to Library", systemImage: "plus.circle")
-                            .bold()
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.accentColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
+
+                    Button(action: addToLibrary) {
+                        HStack {
+                            if isAdding {
+                                ProgressView().tint(.white)
+                            }
+                            Label("Add to Library", systemImage: "plus.circle")
+                                .bold()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                     }
+                    .disabled(isAdding)
                     .padding(.horizontal)
                 }
 
@@ -109,6 +116,7 @@ struct SongDetailView: View {
                     rating: $rating,
                     comment: $comment,
                     isAlreadyCompleted: isAlreadyCompleted,
+                    isSubmitting: isLogging,
                     action: logAsCompleted
                 )
 
@@ -127,6 +135,24 @@ struct SongDetailView: View {
                 self.comment = songComment
             }
             fetchFullDetails()
+        }
+        .alert(
+            "Something Went Wrong",
+            isPresented: Binding(
+                get: { errorAlertMessage != nil },
+                set: { isPresented in if !isPresented { errorAlertMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorAlertMessage ?? "")
+        }
+    }
+
+    private func addToLibrary() {
+        isAdding = true
+        listManager.add(media: Media(input: .song(song))) { _ in
+            isAdding = false
         }
     }
 
@@ -166,11 +192,15 @@ struct SongDetailView: View {
     }
 
     private func logAsCompleted() {
+        isLogging = true
         DatabaseManager.shared.logSongAsCompleted(withId: song.id, rating: rating, comment: comment) { error in
-            if let error = error {
-                print("Error logging song as completed: \(error.localizedDescription)")
-            } else {
-                Task { @MainActor in
+            Task { @MainActor in
+                isLogging = false
+                if let error = error {
+                    print("Error logging song as completed: \(error.localizedDescription)")
+                    errorAlertMessage = "Couldn't save your rating. \(error.localizedDescription)"
+                } else {
+                    isAlreadyCompleted = true
                     await ListManager.shared.fetchListenList(forceReload: true)
                 }
             }

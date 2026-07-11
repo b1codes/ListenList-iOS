@@ -12,25 +12,26 @@ struct TabUIView: View {
 
     @EnvironmentObject var authManager: AuthManager
     @StateObject private var listManager = ListManager.shared
+    @StateObject private var tabSelection = TabSelectionManager()
     @State private var searchText = ""
 
     var body: some View {
         if #available(iOS 18.0, *) {
-            TabView {
-                Tab("Home", systemImage: "play.house.fill") {
+            TabView(selection: $tabSelection.selected) {
+                Tab("Home", systemImage: "play.house.fill", value: .home) {
                     ListenListView()
                 }
 
-                Tab("Completed", systemImage: "checkmark.seal.fill") {
+                Tab("Completed", systemImage: "checkmark.seal.fill", value: .completed) {
                     CompletedMediaView()
                 }
 
-                Tab("Settings", systemImage: "gearshape.fill") {
+                Tab("Settings", systemImage: "gearshape.fill", value: .settings) {
                     SettingsView()
                 }
 
                 if let accessToken = authManager.accessToken, let tokenType = authManager.tokenType {
-                    Tab("Search", systemImage: "magnifyingglass", role: .search) {
+                    Tab("Search", systemImage: "magnifyingglass", value: .search, role: .search) {
                         NavigationStack {
                             SearchView(access: accessToken, type: tokenType, searchText: $searchText)
                         }
@@ -39,27 +40,42 @@ struct TabUIView: View {
                 }
             }
             .environmentObject(listManager)
+            .environmentObject(tabSelection)
             .navigationBarBackButtonHidden(true)
+            .alert(
+                "Something Went Wrong",
+                isPresented: Binding(
+                    get: { listManager.errorMessage != nil },
+                    set: { isPresented in if !isPresented { listManager.errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(listManager.errorMessage ?? "")
+            }
         } else {
             // Fallback for older iOS versions
-            TabView {
+            TabView(selection: $tabSelection.selected) {
                 ListenListView()
                     .tabItem {
                         Image(systemName: "play.house.fill")
                         Text("Home")
                     }
+                    .tag(AppTab.home)
 
                 CompletedMediaView()
                     .tabItem {
                         Image(systemName: "checkmark.seal.fill")
                         Text("Completed")
                     }
+                    .tag(AppTab.completed)
 
                 SettingsView()
                     .tabItem {
                         Image(systemName: "gearshape.fill")
                         Text("Settings")
                     }
+                    .tag(AppTab.settings)
 
                 if let accessToken = authManager.accessToken, let tokenType = authManager.tokenType {
                     SearchView(access: accessToken, type: tokenType, searchText: .constant(""))
@@ -67,10 +83,23 @@ struct TabUIView: View {
                             Image(systemName: "magnifyingglass")
                             Text("Search")
                         }
+                        .tag(AppTab.search)
                 }
             }
             .environmentObject(listManager)
+            .environmentObject(tabSelection)
             .navigationBarBackButtonHidden(true)
+            .alert(
+                "Something Went Wrong",
+                isPresented: Binding(
+                    get: { listManager.errorMessage != nil },
+                    set: { isPresented in if !isPresented { listManager.errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(listManager.errorMessage ?? "")
+            }
         }
     }
 }

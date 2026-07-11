@@ -73,6 +73,8 @@ GEMINI.md
 .gemini/
 .agent/
 agent.md
+PRODUCT.md
+DESIGN.md
 
 # Python
 __pycache__/
