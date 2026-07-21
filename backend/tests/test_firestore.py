@@ -1,8 +1,11 @@
 import os
+from unittest.mock import patch
 
 import httpx
 import pytest
+from google.api_core.exceptions import GoogleAPIError
 from google.cloud import firestore
+from google.cloud.firestore_v1.batch import WriteBatch
 
 EMULATOR_HOST = os.environ.get("FIRESTORE_EMULATOR_HOST")
 TEST_PROJECT = "listenlist-test"
@@ -261,6 +264,38 @@ def test_log_item_completed_missing_item_raises_404(service):
         service.log_item_completed("u1", "ghost", "song", rating=5, comment="")
 
     assert exc_info.value.status_code == 404
+
+
+def test_failed_completion_leaves_both_collections_unchanged(service):
+    """A failed batch commit must not move the item into either state.
+
+    The fault only fires when a single commit carries more than one queued
+    write, which is exactly the shape of the atomic batch in
+    log_item_completed (one set + one delete, committed together). A single
+    DocumentReference.set() or .delete() call commits just one write and
+    would sail through untouched, so if this code ever regressed to
+    sequential set()/delete() calls, this fault would never trigger, the
+    call would succeed instead of raising, and this test would fail --
+    that's the point: it proves the test is anchored to the real batch.
+    """
+    service.add_item_to_queue("u1", "s1", "song", {"name": "Song"})
+    real_commit = WriteBatch.commit
+
+    def commit_or_fail(self, *args, **kwargs):
+        if len(self._write_pbs) > 1:
+            raise GoogleAPIError("boom")
+        return real_commit(self, *args, **kwargs)
+
+    with patch.object(WriteBatch, "commit", commit_or_fail):
+        with pytest.raises(HTTPException) as exc_info:
+            service.log_item_completed("u1", "s1", "song", rating=5, comment="Great")
+
+    assert exc_info.value.status_code == 500
+
+    items = service.get_active_queue("u1")
+    assert len(items) == 1
+    assert items[0]["item_id"] == "s1"
+    assert service.get_completed_list("u1") == []
 
 
 def test_get_completed_list_filters_by_entity_type(service):
