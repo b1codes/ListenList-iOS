@@ -38,6 +38,13 @@
 | `backend/tests/test_dynamodb.py` | **Deleted.** |
 | `backend/README.md` | **New.** Emulator setup, run, and test instructions. |
 
+**Known interim breakage.** Task 1 removes `DYNAMODB_TABLE_NAME` from `Settings`, but
+`dynamodb.py` reads it at construction — so from Task 1 until Task 6 deletes the file,
+`test_dynamodb.py` fails at *collection*, which aborts the entire pytest run. Between those
+tasks, run the suite as `pytest --ignore=tests/test_dynamodb.py`. Task 6 resolves it by
+deleting both files. The Tasks 2-5 constraint "dynamodb.py must keep working" therefore means
+"leave the file untouched", not "keep it importable".
+
 **Task order rationale:** Task 1 makes the emulator reachable and provable. Tasks 2–4 build `FirestoreService` incrementally, each verified against the live emulator. Task 5 rewires callers. Task 6 removes DynamoDB. The build is only import-clean again at the end of Task 5 — this is expected, and Task 6 is what proves the whole suite green.
 
 ---
@@ -1443,6 +1450,50 @@ Adds route tests covering all six list endpoints; they need no emulator."
 **Interfaces:**
 - Consumes: everything. This task's deliverable is a green suite with no DynamoDB code.
 - Produces: nothing new.
+
+- [ ] **Step 0: Fix `test_auth_routes.py`, which Task 5 broke by design**
+
+`backend/tests/test_auth_routes.py:17` patches `app.routes.auth.db_service` — a symbol Task 5
+correctly removed. One test (`test_auth0_login_returns_session_token`) fails as a result. Now
+that routes take the service through `Depends(get_db)`, the correct substitution is a
+dependency override, matching `tests/test_list_routes.py`.
+
+Replace the `db_service` patch with an override. Add near the top:
+
+```python
+from app.dependencies import get_db
+```
+
+Then rewrite `test_auth0_login_returns_session_token`:
+
+```python
+def test_auth0_login_returns_session_token():
+    class _FakeDatabase:
+        def create_or_update_user(self, **kwargs):
+            return _MOCK_PROFILE
+
+    app.dependency_overrides[get_db] = _FakeDatabase
+    try:
+        with patch("app.routes.auth.verify_auth0_token", new_callable=AsyncMock, return_value=_MOCK_CLAIMS), \
+             patch("app.routes.auth.create_session_token", return_value="my.session.jwt"):
+
+            response = client.post("/auth/auth0", json={"identity_token": "fake.id.token"})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["access_token"] == "my.session.jwt"
+    assert body["token_type"] == "bearer"
+    assert body["email"] == "user@example.com"
+    assert body["spotify_linked"] is False
+    assert len(body["user_id"]) == 20  # sha256 hex[:20]
+```
+
+The `try/finally` matters: without it a failing assertion leaves the override installed and
+leaks into every later test in the session.
+
+The other two tests in the file need no change — they never touch the database.
 
 - [ ] **Step 1: Confirm nothing still references DynamoDB**
 

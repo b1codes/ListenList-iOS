@@ -304,7 +304,8 @@ arguments and returns the cleaned response shape.
 
 ### Existing tests
 
-`test_auth0.py` and `test_auth_routes.py` are unaffected. `test_dynamodb.py` is deleted
+`test_auth0.py` is unaffected. `test_auth_routes.py` needs one test rewired from patching
+`db_service` to a `get_db` dependency override. `test_dynamodb.py` is deleted
 along with the service it tested.
 
 ---
