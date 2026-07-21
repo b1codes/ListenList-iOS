@@ -124,6 +124,7 @@ converts them back to epoch-second integers, preserving the field types clients 
 | `backend/app/dependencies.py` | **new** — `get_db()` FastAPI dependency |
 | `backend/app/routes/list_routes.py` | 6 routes: module import → `Depends(get_db)` |
 | `backend/app/routes/auth.py` | 3 call sites (lines 35, 69, 106) → `Depends(get_db)` |
+| `backend/app/services/spotify.py` | 3 call sites (lines 40, 91, 129) → in-method `get_db()` |
 | `backend/app/config.py` | drop `DYNAMODB_TABLE_NAME`; add `GCP_PROJECT_ID`; fix `AWS_REGION` default |
 | `backend/app/main.py` | description text: "in AWS" → "in GCP" |
 | `backend/requirements.txt` | add `google-cloud-firestore>=2.16.0` |
@@ -158,6 +159,11 @@ a client connection as a side effect of importing the module. That is why
 `get_db()` replaces it with a lazily-constructed, cached instance that FastAPI injects.
 Route tests then substitute a fake through `app.dependency_overrides[get_db]` with no
 constructor trickery.
+
+`SpotifyService` is not a route and cannot receive `Depends`. Its three call sites instead
+invoke `get_db()` inside the methods that need it, rather than binding a service at import
+time. This preserves the property that matters — importing a module never constructs a
+database client — without making `SpotifyService` FastAPI-aware.
 
 ### Configuration changes
 
