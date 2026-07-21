@@ -14,7 +14,7 @@ router = APIRouter()
 async def login_with_apple(request: AppleLoginRequest, db: FirestoreService = Depends(get_db)):
     """
     Endpoint validating a Sign in with Apple Identity Token.
-    Establishes/fetches a user profile in DynamoDB and returns a session JWT.
+    Establishes/fetches a user profile in Firestore and returns a session JWT.
     """
     # 1. Cryptographically verify the Apple identity token
     claims = await verify_apple_token(request.identity_token, request.client_id)
@@ -55,7 +55,7 @@ async def login_with_apple(request: AppleLoginRequest, db: FirestoreService = De
 async def login_with_auth0(request: Auth0LoginRequest, db: FirestoreService = Depends(get_db)):
     """
     Validates an Auth0 ID Token and returns a session JWT.
-    Creates or updates the user profile in DynamoDB on first login.
+    Creates or updates the user profile in Firestore on first login.
     """
     claims = await verify_auth0_token(request.identity_token)
 

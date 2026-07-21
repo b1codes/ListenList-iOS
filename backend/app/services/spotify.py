@@ -35,7 +35,7 @@ class SpotifyService:
     async def get_user_token(self, user_id: str) -> str:
         """
         Retrieves a user's cached Spotify access token. 
-        Automatically refreshes it and saves to DynamoDB if it is expired.
+        Automatically refreshes it and saves to Firestore if it is expired.
         """
         profile = get_db().get_user_profile(user_id)
         if not profile or not profile.get("spotify_linked"):
@@ -87,7 +87,7 @@ class SpotifyService:
             new_refresh_token = data.get("refresh_token", refresh_token)
             expires_in = data.get("expires_in", 3600)
 
-            # Update cache in DynamoDB
+            # Update cache in Firestore
             get_db().save_spotify_tokens(user_id, new_access_token, new_refresh_token, expires_in)
             return new_access_token
 
