@@ -158,3 +158,73 @@ def test_relogin_preserves_spotify_tokens(service):
     assert profile["spotify_refresh_token"] == "spotify_rt"
     assert profile["spotify_linked"] is True
     assert profile["spotify_token_expires_at"] > 0
+
+
+def test_add_item_to_queue_round_trips(service):
+    service.add_item_to_queue(
+        user_id="u1",
+        item_id="song123",
+        entity_type="song",
+        metadata={"name": "Test Song"},
+    )
+
+    items = service.get_active_queue("u1")
+
+    assert len(items) == 1
+    assert items[0]["item_id"] == "song123"
+    assert items[0]["entity_type"] == "song"
+    assert items[0]["metadata"] == {"name": "Test Song"}
+    assert items[0]["is_completed"] is False
+    assert items[0]["added_at"] > 0
+
+
+def test_get_active_queue_filters_by_entity_type(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+    service.add_item_to_queue("u1", "a1", "album", {})
+
+    songs = service.get_active_queue("u1", entity_type="song")
+
+    assert len(songs) == 1
+    assert songs[0]["item_id"] == "s1"
+
+
+def test_get_active_queue_is_scoped_to_one_user(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+    service.add_item_to_queue("u2", "s2", "song", {})
+
+    assert len(service.get_active_queue("u1")) == 1
+
+
+def test_adding_the_same_item_twice_upserts(service):
+    service.add_item_to_queue("u1", "s1", "song", {"name": "First"})
+    service.add_item_to_queue("u1", "s1", "song", {"name": "Second"})
+
+    items = service.get_active_queue("u1")
+
+    assert len(items) == 1
+    assert items[0]["metadata"]["name"] == "Second"
+
+
+def test_entity_type_casing_does_not_duplicate(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+    service.add_item_to_queue("u1", "s1", "SONG", {})
+
+    assert len(service.get_active_queue("u1")) == 1
+
+
+def test_get_active_queue_unknown_user_returns_empty_list(service):
+    assert service.get_active_queue("nobody") == []
+
+
+def test_queue_response_omits_storage_keys(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+
+    item = service.get_active_queue("u1")[0]
+
+    assert set(item.keys()) == {
+        "entity_type",
+        "item_id",
+        "added_at",
+        "is_completed",
+        "metadata",
+    }

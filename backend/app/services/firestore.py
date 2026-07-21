@@ -1,13 +1,50 @@
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException, status
 from google.api_core.exceptions import GoogleAPIError
 from google.cloud import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from app.config import settings
 
 USERS_COLLECTION = "users"
+QUEUE_COLLECTION = "queue"
+COMPLETED_COLLECTION = "completed"
+
+
+def _doc_id(entity_type: str, item_id: str) -> str:
+    """Stable document ID, so re-adding an item upserts instead of duplicating."""
+    return f"{entity_type.lower()}_{item_id}"
+
+
+def _epoch(value: Any) -> Optional[int]:
+    """Normalises a Firestore timestamp to epoch seconds.
+
+    Writes use SERVER_TIMESTAMP, so reads return a datetime. Clients have
+    always seen integers here, so convert rather than change the contract.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return int(value)
+    return int(value.timestamp())
+
+
+def _map_queue_item(snapshot) -> Dict[str, Any]:
+    """Maps a queue document to the client-facing shape.
+
+    Deliberately explicit: document identity and any future internal fields
+    stay out of API responses.
+    """
+    data = snapshot.to_dict() or {}
+    return {
+        "entity_type": data.get("entity_type"),
+        "item_id": data.get("item_id"),
+        "added_at": _epoch(data.get("added_at")),
+        "is_completed": data.get("is_completed", False),
+        "metadata": data.get("metadata", {}),
+    }
 
 
 class FirestoreService:
@@ -84,3 +121,47 @@ class FirestoreService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to link Spotify account credentials.",
             )
+
+    def _queue_collection(self, user_id: str):
+        return self._user_doc(user_id).collection(QUEUE_COLLECTION)
+
+    def _completed_collection(self, user_id: str):
+        return self._user_doc(user_id).collection(COMPLETED_COLLECTION)
+
+    def add_item_to_queue(
+        self, user_id: str, item_id: str, entity_type: str, metadata: Dict[str, Any]
+    ) -> None:
+        """Adds a media item to the user's active queue."""
+        try:
+            self._queue_collection(user_id).document(
+                _doc_id(entity_type, item_id)
+            ).set(
+                {
+                    "entity_type": entity_type.lower(),
+                    "item_id": item_id,
+                    "added_at": firestore.SERVER_TIMESTAMP,
+                    "is_completed": False,
+                    "metadata": metadata,
+                }
+            )
+        except GoogleAPIError as e:
+            print(f"Firestore add queue item error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to add item to your active list.",
+            )
+
+    def get_active_queue(
+        self, user_id: str, entity_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Retrieves the user's active queue, optionally filtered by media type."""
+        try:
+            query = self._queue_collection(user_id)
+            if entity_type:
+                query = query.where(
+                    filter=FieldFilter("entity_type", "==", entity_type.lower())
+                )
+            return [_map_queue_item(doc) for doc in query.stream()]
+        except GoogleAPIError as e:
+            print(f"Firestore fetch queue error: {e}")
+            return []
