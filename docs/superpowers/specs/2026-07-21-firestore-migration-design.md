@@ -15,6 +15,11 @@ AWS→GCP pivot; the Terraform/infrastructure half is tracked separately as **86
 Scope is the **FastAPI backend only**. The iOS app is not touched by this task — it still
 talks to Firestore directly through its own `DatabaseManager`, exactly as it does today.
 
+**No GCP account exists yet, and none is required by this task.** This is a local-development
+change: it moves the backend onto Firestore's API surface against the emulator, so that when
+a GCP project is eventually created, going live is a credentials-and-config step rather than
+a code rewrite. Nothing here blocks on, or should wait for, GCP account setup.
+
 ### Current state (verified 2026-07-21)
 
 - `backend/app/services/dynamodb.py` is the only database layer: 8 methods, single-table
@@ -162,6 +167,10 @@ DYNAMODB_TABLE_NAME: str = "ListenListTable"
 
 # Added
 GCP_PROJECT_ID: str = "listenlist-dev"
+# Under the emulator this is just a namespace label — the project need not
+# exist, and no account, billing, or credentials are involved. It becomes a
+# real project ID only once one is created (86bazmf8b).
+#
 # FIRESTORE_EMULATOR_HOST is read directly from the environment by the
 # client library — it is deliberately NOT a Settings field.
 
@@ -309,12 +318,16 @@ along with the service it tested.
 
 ## Risks
 
-**The backend has no cloud database until 86bazmf8b lands.** By design, this task provisions
-nothing. The deployed `listenlist-dev-api` Lambda will have no reachable database between
-this change and the infrastructure task, because it will point at a Firestore project that
-does not exist yet. Local development via the emulator is fully functional throughout. This
-is acceptable because the dev table is empty and the deployment has no users, but the two
-tasks should land close together.
+**The deployed AWS environment stops working — intentionally.** After this change, the
+`listenlist-dev-api` Lambda points at a Firestore project that does not exist, so it has no
+reachable database. This is not a regression to manage: AWS is being abandoned, the dev table
+is empty, and the deployment has no users. Local development via the emulator is fully
+functional throughout, which is the only environment that matters until a GCP project exists.
+
+The practical consequence is that **the cloud path ships untested**. Emulator coverage
+verifies the query semantics and data model but cannot verify credentials, ADC resolution, or
+IAM. Expect a short round of authentication fixes when 86bazmf8b provisions a real project —
+budget for it there rather than assuming a clean cutover.
 
 **Emulator/production divergence.** The emulator is faithful for CRUD and query semantics
 but does not enforce quotas, billing limits, or composite-index requirements the way
