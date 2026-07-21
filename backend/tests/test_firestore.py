@@ -125,3 +125,36 @@ def test_save_spotify_tokens_records_tokens_and_expiry(service):
     assert profile["spotify_refresh_token"] == "rt"
     assert profile["spotify_linked"] is True
     assert profile["spotify_token_expires_at"] > 0
+
+
+def test_relogin_preserves_spotify_tokens(service):
+    """Verify re-login doesn't erase Spotify tokens when merge=True."""
+    # Create initial user
+    service.create_or_update_user(
+        user_id="u1",
+        provider_sub="s",
+        auth_provider="auth0",
+        email="user@example.com",
+    )
+
+    # Link Spotify account
+    service.save_spotify_tokens(
+        user_id="u1",
+        access_token="spotify_at",
+        refresh_token="spotify_rt",
+        expires_in=3600,
+    )
+
+    # Simulate re-login: call create_or_update_user again without Spotify fields
+    profile = service.create_or_update_user(
+        user_id="u1",
+        provider_sub="s",
+        auth_provider="auth0",
+        email="user@example.com",
+    )
+
+    # Verify Spotify fields survived the re-login call
+    assert profile["spotify_access_token"] == "spotify_at"
+    assert profile["spotify_refresh_token"] == "spotify_rt"
+    assert profile["spotify_linked"] is True
+    assert profile["spotify_token_expires_at"] > 0
