@@ -149,14 +149,19 @@ def firestore_client():
     return firestore.Client(project=TEST_PROJECT)
 
 
-@pytest.fixture(autouse=True)
-def clear_emulator():
-    """Wipe all emulator data between tests so each test is independent."""
-    yield
+def _clear_emulator_data() -> None:
+    """Deletes every document in the emulator's default database."""
     httpx.delete(
         f"http://{EMULATOR_HOST}/emulator/v1/projects/{TEST_PROJECT}"
         f"/databases/(default)/documents"
     )
+
+
+@pytest.fixture(autouse=True)
+def clear_emulator():
+    """Wipe all emulator data between tests so each test is independent."""
+    yield
+    _clear_emulator_data()
 
 
 def test_emulator_round_trips_a_document(firestore_client):
@@ -168,13 +173,19 @@ def test_emulator_round_trips_a_document(firestore_client):
     assert snapshot.to_dict()["value"] == 42
 
 
-def test_emulator_is_cleared_between_tests(firestore_client):
-    snapshot = firestore_client.collection("smoke").document("d1").get()
+def test_clearing_removes_all_documents(firestore_client):
+    firestore_client.collection("smoke").document("d1").set({"value": 42})
 
-    assert not snapshot.exists
+    _clear_emulator_data()
+
+    assert not firestore_client.collection("smoke").document("d1").get().exists
 ```
 
-The second test is not redundant: it proves the `clear_emulator` fixture actually works. Test isolation that silently fails would make every later task's tests unreliable.
+`test_clearing_removes_all_documents` is not redundant: it proves the wipe the autouse
+fixture depends on actually works. Test isolation that silently failed would make every
+later task's tests unreliable. It calls `_clear_emulator_data()` directly rather than
+asserting on state left by a previous test, so it is order-independent and cannot pass
+for the wrong reason.
 
 - [ ] **Step 5: Start the emulator and run the smoke test**
 
@@ -1339,34 +1350,37 @@ Also update the stale comment above the first call site:
 
 - [ ] **Step 7: Rewire `spotify.py`**
 
-`SpotifyService` is not a route, so it cannot receive `Depends`. Remove the module-level import at `backend/app/services/spotify.py:5`:
+`SpotifyService` is not a route, so it cannot receive `Depends`. Replace the module-level import at `backend/app/services/spotify.py:5`:
 
 ```python
 from app.services.dynamodb import db_service
 ```
 
-Do **not** add a module-level `get_db()` call — that would reintroduce the import-time client construction this migration removes. Instead, import inside the three methods that need it. At `spotify.py:40`, `:91`, and `:129`, replace `db_service.` with a locally obtained service:
+with:
 
 ```python
-        from app.dependencies import get_db
+from app.dependencies import get_db
+```
 
-        db = get_db()
-        profile = db.get_user_profile(user_id)
+Then at `spotify.py:40`, `:91`, and `:129`, call `get_db()` inside the methods:
+
+```python
+        profile = get_db().get_user_profile(user_id)
 ```
 
 ```python
-            from app.dependencies import get_db
-
             get_db().save_spotify_tokens(user_id, new_access_token, new_refresh_token, expires_in)
 ```
 
 ```python
-            from app.dependencies import get_db
-
             get_db().save_spotify_tokens(user_id, access_token, refresh_token, expires_in)
 ```
 
-The function-local imports also avoid a circular import: `dependencies` imports `firestore`, and a top-level import here would run before `spotify` finishes loading in some orderings.
+Import `get_db` at module top, following the conventions of every other import in this
+codebase. What keeps client construction out of import time is calling `get_db()` **inside**
+the methods rather than binding a service at module level — not where the `import` statement
+sits. Do **not** add a module-level `db = get_db()`; that would reintroduce exactly the
+import-time construction this migration removes.
 
 - [ ] **Step 8: Update the app description**
 
