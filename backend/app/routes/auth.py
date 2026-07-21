@@ -3,14 +3,15 @@ from app.models.user import AppleLoginRequest, Auth0LoginRequest, UserSessionRes
 from app.auth.apple import verify_apple_token
 from app.auth.auth0 import verify_auth0_token
 from app.auth.jwt import create_session_token, get_current_user_id
-from app.services.dynamodb import db_service
+from app.dependencies import get_db
+from app.services.firestore import FirestoreService
 from app.services.spotify import spotify_service
 import hashlib
 
 router = APIRouter()
 
 @router.post("/apple", response_model=UserSessionResponse)
-async def login_with_apple(request: AppleLoginRequest):
+async def login_with_apple(request: AppleLoginRequest, db: FirestoreService = Depends(get_db)):
     """
     Endpoint validating a Sign in with Apple Identity Token.
     Establishes/fetches a user profile in DynamoDB and returns a session JWT.
@@ -31,8 +32,8 @@ async def login_with_apple(request: AppleLoginRequest):
     last_name = request.family_name or claims.get("family_name", "")
     display_name = f"{first_name} {last_name}".strip() or email or "User"
     
-    # 3. Create or update user profile item in DynamoDB
-    profile = db_service.create_or_update_user(
+    # 3. Create or update user profile item in Firestore
+    profile = db.create_or_update_user(
         user_id=user_id,
         provider_sub=apple_sub,
         auth_provider="apple",
@@ -51,7 +52,7 @@ async def login_with_apple(request: AppleLoginRequest):
     )
 
 @router.post("/auth0", response_model=UserSessionResponse)
-async def login_with_auth0(request: Auth0LoginRequest):
+async def login_with_auth0(request: Auth0LoginRequest, db: FirestoreService = Depends(get_db)):
     """
     Validates an Auth0 ID Token and returns a session JWT.
     Creates or updates the user profile in DynamoDB on first login.
@@ -66,7 +67,7 @@ async def login_with_auth0(request: Auth0LoginRequest):
 
     user_id = hashlib.sha256(auth0_sub.encode()).hexdigest()[:20]
 
-    profile = db_service.create_or_update_user(
+    profile = db.create_or_update_user(
         user_id=user_id,
         provider_sub=auth0_sub,
         auth_provider="auth0",
@@ -99,11 +100,11 @@ async def connect_spotify(request: SpotifyConnectRequest, user_id: str = Depends
     )
 
 @router.get("/spotify/status", response_model=SpotifyStatusResponse)
-async def get_spotify_connection_status(user_id: str = Depends(get_current_user_id)):
+async def get_spotify_connection_status(user_id: str = Depends(get_current_user_id), db: FirestoreService = Depends(get_db)):
     """
     Check if the authenticated user has a Spotify account connected.
     """
-    profile = db_service.get_user_profile(user_id)
+    profile = db.get_user_profile(user_id)
     linked = profile.get("spotify_linked", False)
     
     display_name = None
