@@ -960,8 +960,11 @@ Add these methods to `FirestoreService`:
             )
 ```
 
-The bare `except HTTPException: raise` is load-bearing: without it the 404 raised for a
-missing queue item would be caught and rewritten as a 500.
+The bare `except HTTPException: raise` is defensive, not load-bearing. `HTTPException` is not
+a subclass of `GoogleAPIError`, so the fallback clause could never catch the 404 regardless of
+ordering. (The claim *is* true of `dynamodb.py`, whose fallback is the far broader
+`except Exception` — do not carry that reasoning across without rechecking.) Keep the clause:
+it costs nothing and preserves the 404 if the fallback is ever widened.
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
