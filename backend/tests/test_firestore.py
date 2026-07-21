@@ -228,3 +228,100 @@ def test_queue_response_omits_storage_keys(service):
         "is_completed",
         "metadata",
     }
+
+
+from fastapi import HTTPException
+
+
+def test_log_item_completed_moves_item_between_collections(service):
+    service.add_item_to_queue("u1", "s1", "song", {"name": "Song"})
+
+    service.log_item_completed("u1", "s1", "song", rating=5, comment="Great")
+
+    assert service.get_active_queue("u1") == []
+    completed = service.get_completed_list("u1")
+    assert len(completed) == 1
+    assert completed[0]["item_id"] == "s1"
+    assert completed[0]["rating"] == 5
+    assert completed[0]["comment"] == "Great"
+    assert completed[0]["is_completed"] is True
+    assert completed[0]["completed_at"] > 0
+
+
+def test_log_item_completed_preserves_metadata(service):
+    service.add_item_to_queue("u1", "s1", "song", {"name": "Song"})
+
+    service.log_item_completed("u1", "s1", "song", rating=4, comment="")
+
+    assert service.get_completed_list("u1")[0]["metadata"] == {"name": "Song"}
+
+
+def test_log_item_completed_missing_item_raises_404(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.log_item_completed("u1", "ghost", "song", rating=5, comment="")
+
+    assert exc_info.value.status_code == 404
+
+
+def test_get_completed_list_filters_by_entity_type(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+    service.add_item_to_queue("u1", "a1", "album", {})
+    service.log_item_completed("u1", "s1", "song", rating=5, comment="")
+    service.log_item_completed("u1", "a1", "album", rating=3, comment="")
+
+    albums = service.get_completed_list("u1", entity_type="album")
+
+    assert len(albums) == 1
+    assert albums[0]["item_id"] == "a1"
+
+
+def test_get_completed_list_unknown_user_returns_empty_list(service):
+    assert service.get_completed_list("nobody") == []
+
+
+def test_completed_response_omits_storage_keys(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+    service.log_item_completed("u1", "s1", "song", rating=5, comment="ok")
+
+    item = service.get_completed_list("u1")[0]
+
+    assert set(item.keys()) == {
+        "entity_type",
+        "item_id",
+        "completed_at",
+        "is_completed",
+        "rating",
+        "comment",
+        "metadata",
+    }
+
+
+def test_delete_item_removes_from_queue(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+
+    service.delete_item("u1", "s1", "song", queue_only=True)
+
+    assert service.get_active_queue("u1") == []
+
+
+def test_delete_item_removes_from_completed(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+    service.log_item_completed("u1", "s1", "song", rating=5, comment="")
+
+    service.delete_item("u1", "s1", "song", queue_only=False)
+
+    assert service.get_completed_list("u1") == []
+
+
+def test_delete_item_queue_only_leaves_completed_untouched(service):
+    service.add_item_to_queue("u1", "s1", "song", {})
+    service.log_item_completed("u1", "s1", "song", rating=5, comment="")
+
+    service.delete_item("u1", "s1", "song", queue_only=True)
+
+    assert len(service.get_completed_list("u1")) == 1
+
+
+def test_delete_item_missing_document_does_not_raise(service):
+    # Firestore deletes are idempotent; deleting nothing is not an error.
+    service.delete_item("u1", "ghost", "song", queue_only=True)

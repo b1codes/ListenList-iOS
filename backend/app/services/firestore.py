@@ -47,6 +47,20 @@ def _map_queue_item(snapshot) -> Dict[str, Any]:
     }
 
 
+def _map_completed_item(snapshot) -> Dict[str, Any]:
+    """Maps a completed document to the client-facing shape."""
+    data = snapshot.to_dict() or {}
+    return {
+        "entity_type": data.get("entity_type"),
+        "item_id": data.get("item_id"),
+        "completed_at": _epoch(data.get("completed_at")),
+        "is_completed": data.get("is_completed", True),
+        "rating": data.get("rating"),
+        "comment": data.get("comment"),
+        "metadata": data.get("metadata", {}),
+    }
+
+
 class FirestoreService:
     """Firestore-backed persistence for user profiles, queues, and completions.
 
@@ -165,3 +179,82 @@ class FirestoreService:
         except GoogleAPIError as e:
             print(f"Firestore fetch queue error: {e}")
             return []
+
+    def log_item_completed(
+        self, user_id: str, item_id: str, entity_type: str, rating: int, comment: str
+    ) -> None:
+        """Moves an active queue item into the completed log.
+
+        The create and the delete run in a single batch, so a failure cannot
+        leave the item present in both lists.
+        """
+        doc_id = _doc_id(entity_type, item_id)
+        queue_ref = self._queue_collection(user_id).document(doc_id)
+        completed_ref = self._completed_collection(user_id).document(doc_id)
+
+        try:
+            queue_snapshot = queue_ref.get()
+            if not queue_snapshot.exists:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Item was not found in your active queue.",
+                )
+
+            queue_data = queue_snapshot.to_dict() or {}
+
+            batch = self.db.batch()
+            batch.set(
+                completed_ref,
+                {
+                    "entity_type": entity_type.lower(),
+                    "item_id": item_id,
+                    "completed_at": firestore.SERVER_TIMESTAMP,
+                    "is_completed": True,
+                    "rating": rating,
+                    "comment": comment,
+                    "metadata": queue_data.get("metadata", {}),
+                },
+            )
+            batch.delete(queue_ref)
+            batch.commit()
+        except HTTPException:
+            raise
+        except GoogleAPIError as e:
+            print(f"Firestore complete item error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to record completion.",
+            )
+
+    def get_completed_list(
+        self, user_id: str, entity_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Fetches all completed items logged by the user."""
+        try:
+            query = self._completed_collection(user_id)
+            if entity_type:
+                query = query.where(
+                    filter=FieldFilter("entity_type", "==", entity_type.lower())
+                )
+            return [_map_completed_item(doc) for doc in query.stream()]
+        except GoogleAPIError as e:
+            print(f"Firestore fetch completions error: {e}")
+            return []
+
+    def delete_item(
+        self, user_id: str, item_id: str, entity_type: str, queue_only: bool = True
+    ) -> None:
+        """Deletes an item from either the active queue or the completed log."""
+        collection = (
+            self._queue_collection(user_id)
+            if queue_only
+            else self._completed_collection(user_id)
+        )
+        try:
+            collection.document(_doc_id(entity_type, item_id)).delete()
+        except GoogleAPIError as e:
+            print(f"Firestore delete item error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete the item.",
+            )
