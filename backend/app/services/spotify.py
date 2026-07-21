@@ -2,7 +2,7 @@ import httpx
 import time
 from fastapi import HTTPException, status
 from app.config import settings
-from app.services.dynamodb import db_service
+from app.dependencies import get_db
 from typing import Dict, Any, Optional
 
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
@@ -35,9 +35,9 @@ class SpotifyService:
     async def get_user_token(self, user_id: str) -> str:
         """
         Retrieves a user's cached Spotify access token. 
-        Automatically refreshes it and saves to DynamoDB if it is expired.
+        Automatically refreshes it and saves to Firestore if it is expired.
         """
-        profile = db_service.get_user_profile(user_id)
+        profile = get_db().get_user_profile(user_id)
         if not profile or not profile.get("spotify_linked"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -87,8 +87,8 @@ class SpotifyService:
             new_refresh_token = data.get("refresh_token", refresh_token)
             expires_in = data.get("expires_in", 3600)
 
-            # Update cache in DynamoDB
-            db_service.save_spotify_tokens(user_id, new_access_token, new_refresh_token, expires_in)
+            # Update cache in Firestore
+            get_db().save_spotify_tokens(user_id, new_access_token, new_refresh_token, expires_in)
             return new_access_token
 
     async def exchange_auth_code(self, user_id: str, code: str, redirect_uri: Optional[str] = None) -> Dict[str, Any]:
@@ -126,7 +126,7 @@ class SpotifyService:
             expires_in = data.get("expires_in", 3600)
 
             # Cache in database
-            db_service.save_spotify_tokens(user_id, access_token, refresh_token, expires_in)
+            get_db().save_spotify_tokens(user_id, access_token, refresh_token, expires_in)
             
             # Fetch user profile to verify connection and get display name
             display_name = await self.fetch_spotify_display_name(access_token)

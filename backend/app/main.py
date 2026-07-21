@@ -5,7 +5,7 @@ from app.routes import auth, list_routes, search
 
 app = FastAPI(
     title="ListenList Serverless API",
-    description="Backend API for managing Spotify media queue, completions, and user mapping in AWS.",
+    description="Backend API for managing Spotify media queue, completions, and user mapping in GCP.",
     version="1.0.0"
 )
 
