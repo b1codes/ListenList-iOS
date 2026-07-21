@@ -4,8 +4,10 @@ from unittest.mock import patch
 import httpx
 import pytest
 from google.api_core.exceptions import GoogleAPIError
+from google.auth.exceptions import RefreshError
 from google.cloud import firestore
 from google.cloud.firestore_v1.batch import WriteBatch
+from google.cloud.firestore_v1.collection import CollectionReference
 
 EMULATOR_HOST = os.environ.get("FIRESTORE_EMULATOR_HOST")
 TEST_PROJECT = "listenlist-test"
@@ -360,3 +362,101 @@ def test_delete_item_queue_only_leaves_completed_untouched(service):
 def test_delete_item_missing_document_does_not_raise(service):
     # Firestore deletes are idempotent; deleting nothing is not an error.
     service.delete_item("u1", "ghost", "song", queue_only=True)
+
+
+# --- Finding A: malformed item_id/entity_type must 400, not 500 ---------
+
+
+def test_add_item_to_queue_rejects_slash_in_item_id(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.add_item_to_queue("u1", "a/b", "song", {})
+
+    assert exc_info.value.status_code == 400
+
+
+def test_add_item_to_queue_rejects_reserved_pattern(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.add_item_to_queue("u1", "__proto__", "song", {})
+
+    assert exc_info.value.status_code == 400
+
+
+def test_add_item_to_queue_rejects_empty_item_id(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.add_item_to_queue("u1", "", "song", {})
+
+    assert exc_info.value.status_code == 400
+
+
+def test_add_item_to_queue_rejects_whitespace_only_item_id(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.add_item_to_queue("u1", "   ", "song", {})
+
+    assert exc_info.value.status_code == 400
+
+
+def test_add_item_to_queue_rejects_overlong_item_id(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.add_item_to_queue("u1", "x" * 1001, "song", {})
+
+    assert exc_info.value.status_code == 400
+
+
+def test_add_item_to_queue_accepts_normal_spotify_id(service):
+    # A real Spotify ID must still sail through unaffected by the new checks.
+    service.add_item_to_queue(
+        "u1", "4cOdK2wGLETKBW3PvgPWqT", "song", {"name": "Test Song"}
+    )
+
+    items = service.get_active_queue("u1")
+
+    assert len(items) == 1
+    assert items[0]["item_id"] == "4cOdK2wGLETKBW3PvgPWqT"
+
+
+def test_delete_item_rejects_slash_in_item_id(service):
+    # Proves the validation lives in the shared _doc_id helper, not just in
+    # add_item_to_queue.
+    with pytest.raises(HTTPException) as exc_info:
+        service.delete_item("u1", "a/b", "song", queue_only=True)
+
+    assert exc_info.value.status_code == 400
+
+
+def test_delete_item_rejects_reserved_pattern(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.delete_item("u1", "__proto__", "song", queue_only=True)
+
+    assert exc_info.value.status_code == 400
+
+
+def test_delete_item_rejects_empty_item_id(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.delete_item("u1", "", "song", queue_only=True)
+
+    assert exc_info.value.status_code == 400
+
+
+def test_delete_item_rejects_overlong_item_id(service):
+    with pytest.raises(HTTPException) as exc_info:
+        service.delete_item("u1", "x" * 1001, "song", queue_only=True)
+
+    assert exc_info.value.status_code == 400
+
+
+# --- Finding B: google.auth errors on read paths must degrade to empty ----
+
+
+def test_get_active_queue_degrades_to_empty_list_on_auth_error(service):
+    """A revoked or clock-skewed credential must not surface as a 500.
+
+    google.auth errors (RefreshError, DefaultCredentialsError, TransportError)
+    are disjoint from google.api_core's GoogleAPIError, so the read path must
+    explicitly widen its except clause to catch them too.
+    """
+    service.add_item_to_queue("u1", "s1", "song", {})
+
+    with patch.object(
+        CollectionReference, "stream", side_effect=RefreshError("boom")
+    ):
+        assert service.get_active_queue("u1") == []

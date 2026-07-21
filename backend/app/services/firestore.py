@@ -1,8 +1,10 @@
+import re
 import time
 from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException, status
 from google.api_core.exceptions import GoogleAPIError
+from google.auth.exceptions import GoogleAuthError
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
@@ -12,9 +14,47 @@ USERS_COLLECTION = "users"
 QUEUE_COLLECTION = "queue"
 COMPLETED_COLLECTION = "completed"
 
+# google.auth errors (credentials, token refresh, transport) are disjoint from
+# google.api_core's GoogleAPIError, so both must be caught for the documented
+# degrade-to-empty behaviour to hold against real credentials.
+DATABASE_ERRORS = (GoogleAPIError, GoogleAuthError)
+
+# Firestore document ID constraints that DynamoDB sort keys did not have:
+# no '/', no reserved '__*__' pattern, and a byte-length ceiling. item_id and
+# entity_type are client-supplied, so both are validated here -- this is the
+# single choke point shared by add_item_to_queue, log_item_completed, and
+# delete_item.
+_RESERVED_ID_PATTERN = re.compile(r"^__.*__$")
+MAX_ITEM_ID_LENGTH = 1000
+
 
 def _doc_id(entity_type: str, item_id: str) -> str:
-    """Stable document ID, so re-adding an item upserts instead of duplicating."""
+    """Stable document ID, so re-adding an item upserts instead of duplicating.
+
+    Raises HTTPException(400) for malformed client input -- this is not a
+    server fault, so it must not be swallowed into a 500.
+    """
+    for label, value in (("item_id", item_id), ("entity_type", entity_type)):
+        if not value or not value.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{label} must not be empty.",
+            )
+        if "/" in value:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{label} must not contain '/'.",
+            )
+        if _RESERVED_ID_PATTERN.match(value):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{label} must not match the reserved '__*__' pattern.",
+            )
+    if len(item_id) > MAX_ITEM_ID_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"item_id must be at most {MAX_ITEM_ID_LENGTH} characters.",
+        )
     return f"{entity_type.lower()}_{item_id}"
 
 
@@ -98,7 +138,7 @@ class FirestoreService:
             # this write are left untouched rather than erased.
             self._user_doc(user_id).set(payload, merge=True)
             return self.get_user_profile(user_id)
-        except GoogleAPIError as e:
+        except DATABASE_ERRORS as e:
             print(f"Firestore user creation error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -110,7 +150,7 @@ class FirestoreService:
         try:
             snapshot = self._user_doc(user_id).get()
             return snapshot.to_dict() or {}
-        except GoogleAPIError as e:
+        except DATABASE_ERRORS as e:
             print(f"Firestore fetch profile error: {e}")
             return {}
 
@@ -129,7 +169,7 @@ class FirestoreService:
                 },
                 merge=True,
             )
-        except GoogleAPIError as e:
+        except DATABASE_ERRORS as e:
             print(f"Firestore save Spotify tokens error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -158,7 +198,7 @@ class FirestoreService:
                     "metadata": metadata,
                 }
             )
-        except GoogleAPIError as e:
+        except DATABASE_ERRORS as e:
             print(f"Firestore add queue item error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -176,7 +216,7 @@ class FirestoreService:
                     filter=FieldFilter("entity_type", "==", entity_type.lower())
                 )
             return [_map_queue_item(doc) for doc in query.stream()]
-        except GoogleAPIError as e:
+        except DATABASE_ERRORS as e:
             print(f"Firestore fetch queue error: {e}")
             return []
 
@@ -219,7 +259,7 @@ class FirestoreService:
             batch.commit()
         except HTTPException:
             raise
-        except GoogleAPIError as e:
+        except DATABASE_ERRORS as e:
             print(f"Firestore complete item error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -237,7 +277,7 @@ class FirestoreService:
                     filter=FieldFilter("entity_type", "==", entity_type.lower())
                 )
             return [_map_completed_item(doc) for doc in query.stream()]
-        except GoogleAPIError as e:
+        except DATABASE_ERRORS as e:
             print(f"Firestore fetch completions error: {e}")
             return []
 
@@ -252,7 +292,7 @@ class FirestoreService:
         )
         try:
             collection.document(_doc_id(entity_type, item_id)).delete()
-        except GoogleAPIError as e:
+        except DATABASE_ERRORS as e:
             print(f"Firestore delete item error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
