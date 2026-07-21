@@ -10,9 +10,14 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24 * 7  # 1 week
 
-    # DynamoDB Configuration
-    DYNAMODB_TABLE_NAME: str = "ListenListTable"
-    AWS_REGION: str = "us-east-1"
+    # Firestore Configuration
+    # Under the emulator this project need not exist — it is only a namespace
+    # label. It becomes a real GCP project ID once one is created (86bazmf8b).
+    GCP_PROJECT_ID: str = "listenlist-dev"
+
+    # AWS region is retained solely for SSM secret bootstrapping below.
+    # The infrastructure lives in us-east-2, not us-east-1.
+    AWS_REGION: str = "us-east-2"
 
     # Spotify Integration
     SPOTIFY_CLIENT_ID: Optional[str] = None
